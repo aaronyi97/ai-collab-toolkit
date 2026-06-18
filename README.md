@@ -42,6 +42,26 @@ you the single most important one you're missing:
 
 ---
 
+## Which tools this works with
+
+This toolkit works by **putting rule files into your project** (`CLAUDE.md`,
+`AGENTS.md`, `.cursor/rules`, etc.) that your AI assistant reads. So the test is
+simple: **does the tool read project rule files?**
+
+- **✅ Works with** — assistants that read project rule files: Claude Code, Cursor,
+  Codex, GitHub Copilot, Windsurf, Cline, and any tool that reads `AGENTS.md`
+  (Gemini CLI, Aider, Zed, JetBrains, … — `AGENTS.md` is a cross-tool standard).
+- **❌ Not a fit** — autonomous agents with their own memory/learning architecture
+  (e.g. Hermes Agent, Devin-style agents). They already solve memory / structure /
+  recall with built-in systems and don't read external collaboration rules, so this
+  toolkit would just be redundant for them.
+
+**Rule of thumb**: if the tool reads a `CLAUDE.md` / `AGENTS.md` / rules file, it's a
+fit. If it has its own closed memory-and-collaboration brain and ignores external
+rule files, you don't need this.
+
+---
+
 ## Before / After
 
 **Without structure** (what usually happens):
@@ -201,6 +221,15 @@ aict doctor basic --lang zh
 
 **多工具支持**：`aict init --tool <claude|cursor|windsurf|copilot|cline|codex|all>`
 能为不同 AI 编程工具生成协作规则，六个工具共用一份核心契约不漂移。
+
+**适配哪些工具**：这套体系靠"往项目里放规则文件（CLAUDE.md / AGENTS.md / .cursor/rules 等）
+让 AI 工具读取"来工作，所以判断很简单——**这工具读不读项目里的规则文件？**
+- ✅ **适配**（读规则文件的助手）：Claude Code、Cursor、Codex、GitHub Copilot、Windsurf、
+  Cline，以及任何读 AGENTS.md 的工具（Gemini CLI / Aider / Zed / JetBrains 等，AGENTS.md 是跨工具标准）。
+- ❌ **不适配**（自带记忆/学习架构的自主 agent）：如 Hermes Agent、Devin 类。它们用自己的架构
+  已经解决了"记忆/结构/沉淀"，不读外部协作规则，这套体系对它们是重复。
+- **一句话判断**：工具读 CLAUDE.md / AGENTS.md / 规则文件 → 适配；它有自己封闭的记忆和协作大脑、
+  不读外部规则 → 用不上。
 
 **隐私边界**：默认本地——不上传、不遥测、不联网、不扫全盘、不强装 hook。详见
 `privacy-manifest.json` 与 `SECURITY.md`。把真实对话喂给 doctor 前，请先自行脱敏。
