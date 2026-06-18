@@ -1,0 +1,7 @@
+{
+  "mode": "community-basic",
+  "networkDefault": "none",
+  "telemetry": false,
+  "strongEnforcement": false,
+  "requiredReportFields": ["changedFiles", "verification", "unverified"]
+}

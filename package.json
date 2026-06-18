@@ -1,0 +1,39 @@
+{
+  "name": "ai-collab-toolkit",
+  "version": "0.1.0",
+  "description": "Local-first community CLI for bootstrapping and checking personal AI collaboration workflows.",
+  "type": "module",
+  "bin": {
+    "aict": "./bin/aict.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "LICENSE-DOCS",
+    "privacy-manifest.json"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "node --test && node scripts/check-private-content.js && node scripts/check-checksums.js",
+    "privacy:scan": "node scripts/check-private-content.js",
+    "checksum": "node scripts/write-checksums.js"
+  },
+  "keywords": ["ai", "cli", "collaboration", "local-first", "agents", "workflow", "doctor", "bilingual"],
+  "author": "aaronyi97",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aaronyi97/ai-collab-toolkit.git"
+  },
+  "homepage": "https://github.com/aaronyi97/ai-collab-toolkit#readme",
+  "bugs": {
+    "url": "https://github.com/aaronyi97/ai-collab-toolkit/issues"
+  }
+}

@@ -1,0 +1,22 @@
+---
+trigger: always_on
+---
+
+# Windsurf Rules
+
+Full contract: see `_core-contract.md` (single source of truth). This file is the
+Windsurf shell — keep it short and point back to the core to avoid drift.
+
+- **Response shape**: conclusion first, then evidence (files / line ranges /
+  command output), then the next action.
+- **Stay local and scoped**: no default network, no hidden telemetry, no copying
+  private material, no forced hooks; require an explicit path for anything
+  outside the project.
+- **Verify before claiming**: prefer a small runnable check over a broad
+  unverified claim. Do not describe code you did not read.
+- **Uncertainty**: separate Known / Inferred / Unverified.
+- **Risky changes**: stop and ask before credentials, billing, deployment,
+  production data, dependencies, or machine-wide settings. State intended files
+  and why first; report verification and gaps after.
+
+中文要点：先结论后证据再下一步；默认不联网/不加遥测/不拷私有材料/不强装 hook/只在项目内读写；先验证再断言；动密钥·部署·依赖·全局设置前先停。完整规则见 `_core-contract.md`。

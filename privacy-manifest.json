@@ -1,0 +1,48 @@
+{
+  "name": "ai-collab-toolkit",
+  "version": "0.1.0",
+  "defaultNetwork": "none",
+  "telemetry": false,
+  "uploadsUserContent": false,
+  "readsWholeDisk": false,
+  "defaultInterception": false,
+  "defaultHookEnforcement": false,
+  "commands": {
+    "init": {
+      "reads": ["bundled templates inside this npm package", "current working directory path"],
+      "writes": [".aict/** in the current working directory"],
+      "network": "none",
+      "destructiveByDefault": false,
+      "dryRunSupported": true,
+      "uninstallSupported": true
+    },
+    "doctor basic": {
+      "reads": ["stdin text when provided", "--input text when provided", "--input-file path when provided", "built-in synthetic sample otherwise"],
+      "writes": [],
+      "network": "none",
+      "logsPromptText": false,
+      "redaction": ["API-key-like tokens", "cookie-like tokens", "local absolute user paths"]
+    },
+    "demo": {
+      "reads": ["built-in synthetic examples"],
+      "writes": [],
+      "network": "none"
+    }
+  },
+  "globalFlags": {
+    "--dry-run": "Preview writes and do not change disk.",
+    "--no-network": "Require offline behavior. Community commands do not need network.",
+    "--explain": "Print local rule and path reasoning.",
+    "--uninstall": "Remove files listed in .aict/install-manifest.json."
+  },
+  "logs": {
+    "defaultLogFile": "none",
+    "recordsPromptText": false,
+    "recordsApiKeys": false,
+    "recordsPrivatePaths": false
+  },
+  "security": {
+    "secretsCheck": "doctor redacts likely secrets and warns about risky material in evidence snippets",
+    "releaseRequires": ["changelog", "checksums", "license review", "privacy-manifest review"]
+  }
+}

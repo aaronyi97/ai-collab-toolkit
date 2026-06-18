@@ -1,0 +1,19 @@
+{
+  "name": "Mira Example",
+  "workingStyle": [
+    "Start with a short conclusion.",
+    "Separate facts from guesses.",
+    "Prefer local evidence over broad claims."
+  ],
+  "decisionRules": [
+    "Do not ship without a runnable check.",
+    "Ask before changing credentials, deployment, or billing settings.",
+    "Keep public examples synthetic."
+  ],
+  "privacyBoundaries": [
+    "Do not upload private notes.",
+    "Do not paste real customer text into examples.",
+    "Redact local paths and secrets in reports."
+  ],
+  "defaultReviewQuestions": ["What changed?", "How was it verified?", "What remains unverified?"]
+}

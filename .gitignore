@@ -1,0 +1,7 @@
+node_modules/
+coverage/
+.DS_Store
+.aict/
+tmp/
+dist/
+checksums.generated.txt
