@@ -52,6 +52,22 @@ describe("init and demo", () => {
     assert.equal(fs.existsSync(path.join(workspace, ".aict")), false);
   });
 
+  it("init --uninstall keeps generated files after the user edits them", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aict-test-"));
+
+    runAict(["init"], workspace);
+    const contextPath = path.join(workspace, ".aict", "project-context.md");
+    fs.appendFileSync(contextPath, "User filled in private project context.\n");
+
+    const uninstallOutput = runAict(["init", "--uninstall"], workspace);
+
+    assert.match(uninstallOutput, /Kept modified files:/);
+    assert.match(uninstallOutput, /\.aict\/project-context\.md/);
+    assert.equal(fs.existsSync(contextPath), true);
+    assert.match(fs.readFileSync(contextPath, "utf8"), /User filled in private project context/);
+    assert.equal(fs.existsSync(path.join(workspace, ".aict", "install-manifest.json")), true);
+  });
+
   it("init writes the core contract and a Cursor shell that points back to it", () => {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aict-test-"));
     runAict(["init"], workspace);

@@ -12,18 +12,18 @@ you already know your gap, skip straight to Path B.
 
 ## Path A — CLI diagnostic (≈5 min)
 
-Paste your real situation (redact secrets, keys, customer names, and local paths
-first):
+From a cloned checkout, paste your real situation (redact secrets, keys, customer
+names, and local paths first):
 
 ```bash
-npx ai-collab-toolkit doctor basic --input "<your situation, secrets redacted>"
+node bin/aict.js doctor basic --input "<your situation, secrets redacted>"
 ```
 
 Read the single [breakpoint card](./breakpoint-card.md) it returns. It names the
 first missing structure. The `doctor` command itself makes no network calls at
-runtime and uploads nothing; the first `npx`/`npm install` does download the
-package from the npm registry (after that you can run it offline). For a fully
-worked example, see [docs/sample-room.md](./sample-room.md).
+runtime and uploads nothing. The npm package is not published yet; once it is,
+the npm shortcut will download the package from the npm registry first. For a
+fully worked example, see [docs/sample-room.md](./sample-room.md).
 
 No npm? Use the [self-check prompt](./self-check.md) inside the assistant you
 already use — same five-check logic, no install.
@@ -70,7 +70,7 @@ probe, so give it a short declaration summary — not a whole stack of documents
 from your filled thread:
 
 ```bash
-npx ai-collab-toolkit doctor basic --input "Profile: solo founder who ships over polishes and makes fast, direct risk calls.
+node bin/aict.js doctor basic --input "Profile: solo founder who ships over polishes and makes fast, direct risk calls.
 Project context: a weekend note-taking prototype — building the five-screen onboarding for solo founders.
 Acceptance: done means a new tester finishes all five onboarding screens unaided.
 Handoff note: onboarding screens 1-3 drafted; next session builds screens 4-5 and books a tester.
@@ -119,15 +119,15 @@ reusable file — not the theory — is the proof the framework changed somethin
 
 ## 路径 A — CLI 诊断（约 5 分钟）
 
-把你真实的情况粘进去（先脱敏：密钥、key、客户名字、本地路径）：
+在 clone 下来的仓库根目录里，把你真实的情况粘进去（先脱敏：密钥、key、客户名字、本地路径）：
 
 ```bash
-npx ai-collab-toolkit doctor basic --input "<你的情况，已脱敏>"
+node bin/aict.js doctor basic --input "<你的情况，已脱敏>"
 ```
 
 读它返回的那一张[断点卡](./breakpoint-card.md)。它点名第一个缺失的结构。`doctor` 命令本身在
-运行时不发任何网络请求、也不上传任何东西；但首次 `npx`/`npm install` 会从 npm registry 下载这个
-包（之后就能离线运行）。完整跑通的例子见 [docs/sample-room.md](./sample-room.md)。
+运行时不发任何网络请求、也不上传任何东西。npm 包现在还没发布；等发布后，npm 快捷运行方式会先从
+npm registry 下载这个包。完整跑通的例子见 [docs/sample-room.md](./sample-room.md)。
 
 没装 npm？把[自查提示词](./self-check.md)粘进你已经在用的助手里——同一套五项检查逻辑，不用装。
 
@@ -169,7 +169,7 @@ harvest     收割     什么变成可复用素材
 **3. 重新检查（约 10 分钟）。** 每件粘一行带标签的声明——就是你填好那套 thread 各自顶部那行：
 
 ```bash
-npx ai-collab-toolkit doctor basic --lang zh --input "个人画像：先出活再打磨，风险判断快而直接。
+node bin/aict.js doctor basic --lang zh --input "个人画像：先出活再打磨，风险判断快而直接。
 项目背景：一个周末笔记原型，做给独立开发者的五屏新手引导。
 验收：做完意味着新测试者不用问人就能走完五屏。
 交接卡：1-3 屏画了草稿，下一棒做 4-5 屏并约测试者。

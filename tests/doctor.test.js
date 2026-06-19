@@ -168,6 +168,40 @@ describe("doctor basic — contract and redaction", () => {
     assert.equal(output.includes("/Users/<redacted>"), true);
     assert.match(output, /Network: disabled/);
   });
+
+  it("redacts common secret fields before printing Evidence", () => {
+    const output = runAict(["doctor", "basic", "--input", "No profile password: hunter2 and passwd=opensesame and pwd：swordfish. Project context: x. Acceptance: done means x. Handoff note: next x. Harvest: reuse x."]);
+
+    assert.equal(output.includes("hunter2"), false);
+    assert.equal(output.includes("opensesame"), false);
+    assert.equal(output.includes("swordfish"), false);
+    assert.match(output, /Evidence: No profile password=<redacted>/);
+    assert.match(output, /Redaction note:/);
+  });
+
+  it("redacts password fields that use whitespace instead of a delimiter", () => {
+    const output = runAict(["doctor", "basic", "--input", "No profile password hunter2. Project context: x. Acceptance: done means x. Handoff note: next x. Harvest: reuse x."]);
+
+    assert.equal(output.includes("hunter2"), false);
+    assert.match(output, /Evidence: No profile password=<redacted>/);
+  });
+
+  it("redacts GitHub tokens and private key material", () => {
+    const output = runAict(["doctor", "basic", "--input", [
+      "No profile ghp_1234567890abcdefghijklmnopqrst.",
+      "private key: rawsecret.",
+      "Project context: x.",
+      "Acceptance: done means x.",
+      "Handoff note: next x.",
+      "Harvest: reuse x.",
+      "-----BEGIN PRIVATE KEY----- abc -----END PRIVATE KEY-----",
+    ].join(" ")]);
+
+    assert.equal(output.includes("ghp_1234567890abcdefghijklmnopqrst"), false);
+    assert.equal(output.includes("rawsecret"), false);
+    assert.equal(output.includes("BEGIN PRIVATE KEY"), false);
+    assert.match(output, /<redacted-secret>/);
+  });
 });
 
 describe("doctor basic — bilingual heuristic", () => {
@@ -334,6 +368,18 @@ describe("doctor basic — bilingual heuristic", () => {
     assert.equal(top.status, "present");
   });
 
+  it("prints non-contradictory Evidence when all checks are present", () => {
+    const report = formatDoctorReport({
+      text: EN_STRUCTURED_WITH_NEGATIVE_VALUE_WORDS,
+      source: "unit-test",
+      flags: {},
+    });
+
+    assert.match(report, /Top breakpoint: No missing structure detected/);
+    assert.match(report, /Evidence: all five structure markers were detected by basic checks\./);
+    assert.equal(report.includes("the marker is simply absent"), false);
+  });
+
   it("treats a labelled stub with an empty value as missing (EN and ZH)", () => {
     // An init stub like "Acceptance:\n" with nothing after the colon is a bare
     // placeholder, not written structure. Both languages must read it missing;
@@ -351,6 +397,26 @@ describe("doctor basic — bilingual heuristic", () => {
     assert.equal(zhById.acceptance, "missing", "empty '验收：' must be missing");
     assert.equal(zhById.handoff, "missing", "empty '交接卡：' must be missing");
     assert.equal(zhById.harvest, "missing", "empty '收割：' must be missing");
+  });
+
+  it("treats adjacent English labels on one line as empty stubs, not structure", () => {
+    const { checks, top, evidence } = analyzeWorkflow("Profile: Scope: Goal: Acceptance: Handoff note: Harvest:");
+    const byId = Object.fromEntries(checks.map((c) => [c.id, c.status]));
+
+    assert.equal(byId.profile, "missing", "Profile: followed only by the next label is empty");
+    assert.equal(byId.context, "missing", "Scope:/Goal: followed only by the next label is empty");
+    assert.equal(byId.acceptance, "missing", "Acceptance: followed only by the next label is empty");
+    assert.equal(byId.handoff, "missing", "Handoff note: followed only by the next label is empty");
+    assert.equal(byId.harvest, "missing", "Harvest: with no value is empty");
+    assert.equal(top.id, "profile");
+    assert.equal(evidence, null);
+
+    const report = formatDoctorReport({
+      text: "Profile: Scope: Goal: Acceptance: Handoff note: Harvest:",
+      source: "unit-test",
+      flags: {},
+    });
+    assert.match(report, /marker is absent or empty/);
   });
 
   it("does not quote a bare empty label as Evidence (EN and ZH)", () => {

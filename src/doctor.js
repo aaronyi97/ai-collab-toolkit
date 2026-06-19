@@ -136,6 +136,10 @@ const CJK_BARE_MARKERS = CHECKS
   .flatMap((check) => check.strongSignals)
   .map((signal) => signal.toLowerCase())
   .filter((signal) => CJK_SIGNAL.test(signal) && !signal.includes(":") && !signal.includes("："));
+const STRUCTURE_FIELD_MARKERS = CHECKS
+  .flatMap((check) => check.strongSignals)
+  .map((signal) => signal.toLowerCase())
+  .filter((signal) => signal.length > 0);
 
 const NO_BREAKPOINT = {
   id: "none",
@@ -230,6 +234,33 @@ function isMarkerStuffedFieldValue(value) {
   });
 }
 
+function normalizeMarkerLabel(value) {
+  return value
+    .toLowerCase()
+    .replace(/^[#\s]+/, "")
+    .replace(/[：:]+$/g, "")
+    .replace(/[\s_-]+/g, "");
+}
+
+function isAdjacentMarkerOnlyValue(value) {
+  const normalized = normalizeFieldValue(value);
+  if (!normalized) {
+    return false;
+  }
+  const compactValue = normalized.toLowerCase().replace(/\s+/g, "");
+  return STRUCTURE_FIELD_MARKERS.some((marker) => {
+    const compactMarker = normalizeMarkerLabel(marker);
+    if (!compactMarker || !compactValue.startsWith(compactMarker)) {
+      return false;
+    }
+    const rest = compactValue.slice(compactMarker.length);
+    if (rest.length === 0) {
+      return !CJK_SIGNAL.test(marker);
+    }
+    return /^[:：]/.test(rest);
+  });
+}
+
 function isMissingFieldValue(value) {
   const normalized = normalizeFieldValue(value);
   // A label with no value at all ("acceptance:" / "验收：" with nothing after the
@@ -240,7 +271,8 @@ function isMissingFieldValue(value) {
   }
   return EN_EMPTY_FIELD_VALUE.test(normalized) ||
     ZH_EMPTY_FIELD_VALUE.test(normalized) ||
-    isMarkerStuffedFieldValue(value);
+    isMarkerStuffedFieldValue(value) ||
+    isAdjacentMarkerOnlyValue(value);
 }
 
 function isNegatedSignal(segmentLower, needle, index) {
@@ -366,7 +398,10 @@ export function analyzeWorkflow(rawText) {
 
   const top = checks.find((check) => check.status === "missing") ?? NO_BREAKPOINT;
   const allMissing = checks.length > 0 && checks.every((check) => check.status === "missing");
-  return { checks, top, allMissing, evidence: evidenceSentence(text, top) };
+  const evidence = top.id === "none"
+    ? "all five structure markers were detected by basic checks."
+    : evidenceSentence(text, top);
+  return { checks, top, allMissing, evidence };
 }
 
 // A segment is a "bare empty-label line" for `top` when its only tie to the top
@@ -393,8 +428,8 @@ function isBareEmptyLabelLine(segmentLower, top) {
       }
       // A labelled field whose value is a placeholder WORD ("nope", "none",
       // "tbd", "无") is real, quotable evidence. Only a truly empty value
-      // (nothing after the colon) is a bare label.
-      if (normalizeFieldValue(fieldValue).length === 0) {
+      // (nothing after the colon) or a chain of adjacent labels is a bare label.
+      if (normalizeFieldValue(fieldValue).length === 0 || isAdjacentMarkerOnlyValue(fieldValue)) {
         sawEmptyLabel = true;
       } else {
         return false;
@@ -457,7 +492,7 @@ const TEXT = {
     allMissing: "No structured markers found at all — that is itself the signal: the structure is in your head, not written down.",
     top: "Top breakpoint: ",
     evidence: "Evidence: ",
-    noEvidence: "no direct evidence line — the marker is simply absent from your input.",
+    noEvidence: "no direct evidence line — the marker is absent or empty in your input.",
     risk: "Risk: ",
     next: "Next action: ",
     honesty: "Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.",
@@ -472,7 +507,7 @@ const TEXT = {
     allMissing: "五项结构标记一个都没找到——这本身就是信号：结构还在你脑子里，没写下来。",
     top: "Top breakpoint 首要断点：",
     evidence: "Evidence 证据：",
-    noEvidence: "没有直接证据句——这个标记在你的输入里根本就没出现。",
+    noEvidence: "没有直接证据句——这个标记在你的输入里没出现，或没有可用内容。",
     risk: "Risk 风险：",
     next: "Next action 下一步：",
     honesty: "方法说明：public heuristic（公开启发式）——结构启发探针，非 AI 诊断；规则公开，不藏权重。",

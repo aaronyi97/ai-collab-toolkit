@@ -28,8 +28,8 @@ That is a **method layer**, not an execution layer.
   **note: now read-only / archived after being acquired by Cursor**, so reach
   for it as prior art, not a live tool), OpenHands
   ([OpenHands/OpenHands](https://github.com/OpenHands/OpenHands), open coding-agent
-  platform, active), Goose ([block/goose](https://github.com/block/goose),
-  extensible agent by Block, active — now under the Linux Foundation's AAIF).
+  platform, active), Goose ([aaif-goose/goose](https://github.com/aaif-goose/goose),
+  extensible agent originally by Block, active — now under the Linux Foundation's AAIF).
 - **Rule-sync** — rulesync ([dyoshikawa/rulesync](https://github.com/dyoshikawa/rulesync),
   generates rule files for 20+ tools, active), ruler
   ([intellectronica/ruler](https://github.com/intellectronica/ruler), one rule
@@ -80,8 +80,8 @@ aict 待的那层，一句话：它**不**替你执行代码、不把规则文�
   Continue（[continuedev/continue](https://github.com/continuedev/continue)——
   **注意：被 Cursor 收购后已转只读 / 归档**，当历史参考看，不是活工具）、OpenHands
   （[OpenHands/OpenHands](https://github.com/OpenHands/OpenHands)，开源编码 agent
-  平台，活跃）、Goose（[block/goose](https://github.com/block/goose)，Block 出的
-  可扩展 agent，活跃——现归 Linux 基金会 AAIF）。
+  平台，活跃）、Goose（[aaif-goose/goose](https://github.com/aaif-goose/goose)，
+  原由 Block 推出的可扩展 agent，活跃——现归 Linux 基金会 AAIF）。
 - **规则同步** — rulesync（[dyoshikawa/rulesync](https://github.com/dyoshikawa/rulesync)，
   为 20+ 工具生成规则文件，活跃）、ruler
   （[intellectronica/ruler](https://github.com/intellectronica/ruler)，一套规则

@@ -109,6 +109,18 @@ function resolveManagedTarget(relative, cwd) {
   return { ok: true, absolute };
 }
 
+function templatePathForTarget(relative) {
+  for (const [target, templatePath] of TEMPLATE_WRITES) {
+    if (target === relative) return templatePath;
+  }
+  for (const tool of Object.values(TOOLS)) {
+    for (const [target, templatePath] of tool.writes) {
+      if (target === relative) return templatePath;
+    }
+  }
+  return null;
+}
+
 const GENERATED_CONTENT = {
   ".aict/project-context.md": [
     "# Project Context",
@@ -129,6 +141,28 @@ const GENERATED_CONTENT = {
     "",
   ].join("\n"),
 };
+
+function expectedGeneratedContent(relative) {
+  if (Object.prototype.hasOwnProperty.call(GENERATED_CONTENT, relative)) {
+    return GENERATED_CONTENT[relative];
+  }
+  const templatePath = templatePathForTarget(relative);
+  if (templatePath) {
+    return fs.readFileSync(path.join(repoRoot, templatePath), "utf8");
+  }
+  return null;
+}
+
+function isUnmodifiedGeneratedFile(relative, absolute) {
+  const expected = expectedGeneratedContent(relative);
+  if (expected === null) {
+    return true;
+  }
+  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {
+    return true;
+  }
+  return fs.readFileSync(absolute, "utf8") === expected;
+}
 
 // Read --tool from process.argv directly so init stays self-contained
 // (the shared arg parser does not need to know about every command's flags).
@@ -330,9 +364,34 @@ function uninstall(flags, cwd) {
     else refused.push({ relative, reason: resolved.reason });
   }
 
+  let manifestEntry = null;
+  const removable = [];
+  const keptModified = [];
+  for (const entry of allowed) {
+    if (entry.relative === ".aict/install-manifest.json") {
+      manifestEntry = entry;
+      continue;
+    }
+    if (isUnmodifiedGeneratedFile(entry.relative, entry.absolute)) {
+      removable.push(entry);
+    } else {
+      keptModified.push(entry);
+    }
+  }
+  if (manifestEntry && keptModified.length === 0) {
+    removable.push(manifestEntry);
+  }
+
   if (flags.dryRun) {
     const lines = ["AICT uninstall", "Dry run: no files were removed.", "Would remove:"];
-    for (const { relative } of allowed) lines.push("- " + relative);
+    for (const { relative } of removable) lines.push("- " + relative);
+    if (keptModified.length) {
+      lines.push("Would keep modified files:");
+      for (const { relative } of keptModified) lines.push("- " + relative);
+      if (manifestEntry) {
+        lines.push("Would keep manifest: .aict/install-manifest.json (modified files remain)");
+      }
+    }
     if (refused.length) {
       lines.push("Refused (outside project or not aict-managed):");
       for (const { relative, reason } of refused) lines.push("- " + relative + " (" + reason + ")");
@@ -341,7 +400,7 @@ function uninstall(flags, cwd) {
   }
 
   const removed = [];
-  for (const { relative, absolute } of allowed) {
+  for (const { relative, absolute } of removable) {
     if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
       fs.unlinkSync(absolute);
       removed.push(relative);
@@ -350,6 +409,15 @@ function uninstall(flags, cwd) {
   removeEmptyDirs(path.join(cwd, ".aict"), cwd);
   const lines = ["AICT uninstall", "Removed generated files:"];
   for (const file of removed) lines.push("- " + file);
+  if (keptModified.length) {
+    lines.push("Kept modified files:");
+    for (const { relative } of keptModified) {
+      lines.push("- " + relative + " (content differs from generated template; kept to avoid deleting user edits)");
+    }
+    if (manifestEntry) {
+      lines.push("Kept manifest: .aict/install-manifest.json (modified files remain)");
+    }
+  }
   if (refused.length) {
     lines.push("Refused (outside project or not aict-managed):");
     for (const { relative, reason } of refused) lines.push("- " + relative + " (" + reason + ")");
