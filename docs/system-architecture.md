@@ -124,6 +124,10 @@ Still not guaranteed: Whether the guard catches the *right* things depends on
                       well-calibrated review criteria (paid layer).
 ```
 
+> Numbers, illustrative (not a measured stat): with no separation, "done" is
+> declared on **pass 1** and 0 of the steps get an independent owner; with a guard
+> pass, **3 of 8** steps come back flagged before anything is built.
+
 ### 2. Judgment loop — pass / rework / stop, with a three-state acceptance gate
 
 Output is not trusted on sight; it passes through a gate. Three verdicts, plus a
@@ -140,6 +144,10 @@ What changes:         A quick check shows it was not actually done → verdict i
 Still not guaranteed: The threshold for each verdict still has to be calibrated
                       (paid layer).
 ```
+
+> Numbers, illustrative (not a measured stat): with no gate, you only notice on
+> **round 3** that the output was never really done; with the gate, the unverified
+> "completed" is bounced on **round 1**.
 
 ### 3. Cross-family guard — review with a *different* model family
 
@@ -163,6 +171,8 @@ Mini-case: input = "a plan that looks complete."
   Different-vendor review:   "This assumption your version takes for granted
                               is never actually verified."
   Change: one assumption the family defaulted past gets named.
+  Numbers (illustrative, not a stat): same-family 2nd read finds 0 new holes;
+                              the 1st cross-family read names 1 unverified assumption.
 ```
 
 > **⚠️ Read this one carefully — it is the easiest to over-read.** The CLI does
@@ -197,6 +207,8 @@ Mini-case: input = the same line, "help me evaluate this plan."
   Execution mode:  produces the evaluation in format, no questioning of premises.
   Thinking mode:   first demands "attack this plan's biggest assumption."
   Change: same prompt — execution concludes, thinking falsifies first.
+  Numbers (illustrative, not a stat): 1 prompt, 2 modes — execution returns 1
+                   finished verdict; thinking returns 1 challenge to the premise first.
 ```
 
 ### 5. Harvest flywheel — useful experience compounds, rules self-evolve
@@ -223,6 +235,8 @@ Mini-case: input = "this time we hit the 'started before defining done' trap."
   Harvested → seed → recurs → promoted to rule:
                   next kickoff, step one is blocked by that very rule.
   Change: the same trap is not hit a second time.
+  Numbers (illustrative, not a stat): not harvested, the same trap recurs across
+                  3+ kickoffs; harvested → promoted, it is blocked at step 1 of the next.
 ```
 
 ---
@@ -372,6 +386,9 @@ the free pieces. (Full boundary in the product contract
 仍不保证（Still not guaranteed）: 守卫挑得准不准，取决于校准好的审查判据（付费层）。
 ```
 
+> 数字示意（非实测统计）：没有分工时，**第 1 遍**就自己宣布"做完"、没有一步有独立责任人；
+> 有守卫这一遍时，动手做之前先有 **8 步里 3 步**被打回标记。
+
 ### 2. 判断闭环 — 放行 / 返工 / 停止，配三段式验收闸门
 
 产出不是一看到就信，它要过一道闸门。三档裁决，加上三段式验收检查——**未做 / 已做待验 /
@@ -383,6 +400,9 @@ the free pieces. (Full boundary in the product contract
 结果变化（What changes）:    一查发现根本没真做完 → 裁决是返工，它没能进决策。
 仍不保证（Still not guaranteed）: 每一档的阈值仍然要校准（付费层）。
 ```
+
+> 数字示意（非实测统计）：没有闸门时，到**第 3 轮**才发现产出根本没真做完；有闸门时，那句
+> 没验证的"完成了"在**第 1 轮**就被打回。
 
 ### 3. 跨族守卫 — 换一个*不同*的模型族来审
 
@@ -401,6 +421,7 @@ the free pieces. (Full boundary in the product contract
   同族自审：    "没问题，通过。"
   换不同厂商的 AI 审："这条假设你们这一版都默认成立、但它没验证。"
   变化：一个被同族默认略过的假设被点出来。
+  数字示意（非统计）：同族第 2 遍审挑出 0 个新洞；第 1 遍跨族审点出 1 条没验证的假设。
 ```
 
 > **⚠️ 这一条要看仔细——它最容易被读错。** CLI **不会**自动调两个模型。这里没有任何自动编排。
@@ -428,6 +449,7 @@ the free pieces. (Full boundary in the product contract
   执行档：直接按格式产出评估，不质疑前提。
   思辨档：先要求"先攻击这个方案的最大假设"。
   变化：同一句 prompt，执行档给结论、思辨档先证伪。
+  数字示意（非统计）：1 句 prompt、2 个档——执行档给出 1 个收口结论；思辨档先给出 1 条对前提的挑战。
 ```
 
 ### 5. 收割飞轮 — 有用的经验会复利，规则自进化
@@ -448,6 +470,7 @@ the free pieces. (Full boundary in the product contract
   收割成种子 → 反复出现 → 升成规则：
               下次开工第一步，就被这条规则拦住。
   变化：同一个坑，第二次不再踩。
+  数字示意（非统计）：不收割，同一个坑跨 3+ 次开工反复踩；收割 → 升成规则，下一次开工第 1 步就被拦住。
 ```
 
 ---
