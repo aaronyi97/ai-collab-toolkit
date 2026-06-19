@@ -155,11 +155,14 @@ Community path:
 Pro acceleration:
 ```
 
-`Top breakpoint`, `Evidence`, `Risk`, `Next action`, and `Pro acceleration` map
-to the current `doctor basic` shape. `Community path` is the v0.2 extension: it
-should explain what the open framework gives the user before any paid option is
-mentioned. If the CLI has not implemented the extended field yet, docs must not
-present it as already shipped.
+`Top breakpoint`, `Evidence`, `Risk`, and `Next action` map to the current
+`doctor basic` shape (those four are what the CLI prints). `Community path` and
+`Pro acceleration` are **documentation-layer fields the CLI does not print**:
+`Community path` is the v0.2 extension that explains what the open framework gives
+the user before any paid option is mentioned, and `Pro acceleration` is an honest,
+optional note about a not-yet-shipped paid layer — never required to fix the gap.
+If the CLI has not implemented an extended field yet, docs must not present it as
+already shipped.
 
 The card should avoid vague advice. "Write better prompts" is not acceptable. "Add an acceptance block with done means / evidence is / still not done if" is acceptable.
 

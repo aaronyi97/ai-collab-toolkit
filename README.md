@@ -29,6 +29,28 @@ It describes the intended next iteration; it is not a shipped feature list.
 
 If that's the deal you want, read on.
 
+### What's shipped vs. what's roadmap
+
+To set expectations before you read further:
+
+**Shipped now — the whole CLI is three commands:**
+
+- `aict init` — scaffold a local `.aict/` folder (and, with `--tool`, per-editor rule files).
+- `aict doctor basic` — a public structural probe that names your top missing structure.
+- `aict demo` — two local illustrative examples.
+
+**Roadmap / not yet shipped (do not expect these from the CLI today):**
+
+- A paid **deep-diagnosis** layer (multi-breakpoint, scenario patterns, calibration).
+- **Role separation**, a **cross-family guard**, a **judgment loop**, **mode switching**, and a
+  **harvest flywheel / self-evolving rules**.
+
+That second list is **collaboration *method and structure*, not CLI features** — patterns
+*you* run by hand with the AI tools you already use, described in
+[docs/system-architecture.md](./docs/system-architecture.md). The CLI does **not** run
+multiple agents, call a second model, or self-evolve anything. See the contract's
+[§6 "What v0.2 must not claim"](./docs/community-v0.2-product-contract.md#6-what-v02-must-not-claim).
+
 ---
 
 ## What it does
@@ -66,6 +88,27 @@ rule files, you don't need this.
 
 ---
 
+## How this fits with rule-sync tools
+
+If you already use a mature rule-sync tool, keep it — this is a **complement, not a
+replacement**, and they solve different problems:
+
+- **[rulesync](https://github.com/dyoshikawa/rulesync) / [ruler](https://github.com/intellectronica/ruler)** answer *"keep the same rules in sync across all my AI tools"*
+  — one canonical source generated/applied into `CLAUDE.md`, `.cursor/rules`,
+  `.github/copilot-instructions.md`, and 20+ other targets. They are mature and good
+  at distribution.
+- **`aict doctor`** answers a different question: *"does my collaboration structure
+  even have the pieces it needs?"* — is there a profile, a written context, a defined
+  acceptance standard, a handoff path, a harvest path. It checks the **structure**, not
+  the file plumbing.
+
+A reasonable combo: use **rulesync / ruler to sync your rule files** across tools, and
+use **`aict doctor` to check whether what those files describe is structurally
+complete**. (`aict init --tool` does generate a few rule files too, but that is a small
+convenience — for serious multi-tool sync, the dedicated tools above do it better.)
+
+---
+
 ## Before / After
 
 **Without structure** (what usually happens):
@@ -99,7 +142,6 @@ Top breakpoint: Acceptance standard is missing. [Acceptance standard]
 Evidence: The conversation has no acceptance standard and no handoff note.
 Risk: The work can look complete while nobody has defined what would count as done.
 Next action: Write three bullets beginning with done means, evidence is, and still not done if.
-Pro acceleration: Deep diagnosis can compare multiple breakpoints and scenario patterns, but Community intentionally reports only this top visible break.
 Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.
 ```
 
@@ -118,8 +160,38 @@ card → filled six-piece thread → before/after — in
 npx ai-collab-toolkit doctor basic --input "we chatted about a launch, no acceptance, no handoff"
 ```
 
-You'll get the five-part report (breakpoint / evidence / risk / next action / Pro
-acceleration) on your own text, fully offline.
+You'll get the four-part report (breakpoint / evidence / risk / next action) on
+your own text. The `doctor` command itself makes no network calls at runtime; the
+first `npx`/`npm install` does download the package from the npm registry (after
+that you can run it offline).
+
+---
+
+## 10-minute path (no install, no npm)
+
+No Node, no `npx`, nothing to install — just read four docs in order and use the
+assistant you already have. This stitches the existing pages into one route:
+
+1. **Find your pain (~2 min).** Skim the [pain selector](./docs/pain-selector.md)
+   and pick the symptom that sounds like you ("new chats restart from zero",
+   "long projects drift", …). It points you at the likely missing structure.
+2. **Self-check your own text (~3 min).** Open the [self-check prompt](./docs/self-check.md),
+   paste it into your existing AI tool (Claude, ChatGPT, Cursor, …) with a redacted
+   excerpt of your situation. It runs the same five-check logic as the CLI and
+   returns one breakpoint card — no install.
+3. **See it filled in (~3 min).** Read the [sample room](./docs/sample-room.md): one
+   synthetic case from messy input → breakpoint → a filled six-piece thread →
+   before/after. This shows what "fixed" looks like.
+4. **Go one level up (~2 min, optional).** The [advanced sample room](./docs/sample-room-advanced.md)
+   walks a failure → rework → release → harvest loop with a separate guard role —
+   a *method you run by hand*, not a CLI feature.
+
+**Where this points next:** everything above is free and shipped. The deeper,
+calibrated layer (multi-breakpoint diagnosis, tuned review/guard rubrics) is the
+**roadmap / paid layer** — see the "What's shipped vs. what's roadmap" section
+above and the architecture map in [docs/system-architecture.md](./docs/system-architecture.md).
+Want to actually build the skeleton in your own repo? The
+[walkthrough](./docs/walkthrough.md) takes you to one reusable artifact in ~60 minutes.
 
 ---
 
@@ -152,9 +224,9 @@ aict demo [--lang en|zh]    # two illustrative local examples
 
 ### `aict init`
 
-Creates a local `.aict/` folder with a profile schema, rule templates, and
-workflow templates (handoff / review / harvest). Use `--tool` to generate rules
-for a specific editor:
+Creates a local `.aict/` folder with a profile schema, rule templates, workflow
+templates (handoff / review / harvest), and starter stubs for project context and
+acceptance. Use `--tool` to generate rules for a specific editor:
 
 ```bash
 aict init --tool cursor      # → .cursor/rules/ai-collab.mdc
@@ -168,13 +240,16 @@ drift apart. See [docs/manual-setup.md](./docs/manual-setup.md).
 ### `aict doctor basic`
 
 Reads `--input "text"`, `--input-file path`, piped stdin, or a built-in sample.
-Outputs exactly one top breakpoint with evidence, risk, a next action, and one
-"Pro could accelerate" note.
+Outputs exactly one top breakpoint with evidence, risk, and a next action. The
+"top breakpoint" is the **first missing item in a fixed check order** (profile →
+context → acceptance → handoff → harvest) — **not a severity ranking**. It is the
+first gap to close, not necessarily the most damaging one.
 
 ### Global flags
 
 - `--dry-run` — preview writes, change nothing on disk
-- `--no-network` — force fully offline behavior (also the default)
+- `--no-network` — signals offline intent (core commands make no network calls by
+  design anyway; this prints a `Network: disabled` label, it is not an enforced sandbox)
 - `--explain` — print the rule / path reasoning behind a command
 - `--lang en|zh` — report language (English default)
 - `--uninstall` — remove files created by `aict init` via the manifest
@@ -231,16 +306,47 @@ text: **CC BY 4.0** ([LICENSE-DOCS](./LICENSE-DOCS)). Contributions: see
 [`docs/community-v0.2-product-contract.md`](./docs/community-v0.2-product-contract.md)，
 里面写的是 Community v0.2 的产品契约和下一步方向，不代表这些功能已经全部发布。
 
+**已发布 vs. 路线图（未来层）**——先把预期摆清楚：
+
+- **现在已发布的，整个 CLI 就三个命令**：`aict init`（搭本地 `.aict/` 文件夹，加 `--tool`
+  还能生成各编辑器的规则文件）、`aict doctor basic`（公开的结构探针，点名你最缺的那个结构）、
+  `aict demo`（两个本地示例）。
+- **路线图 / 尚未发布（别指望现在的 CLI 有这些）**：付费的**深度诊断**层（多断点、场景模式、
+  校准）；**多角色分工**、**跨族守卫**、**判断闭环**、**模式切换**、**收割飞轮 / 规则自进化**。
+
+第二组是**协作的*方法和结构*，不是 CLI 功能**——是*你*拿已经在用的 AI 工具**亲手编排**的做法，
+详见 [docs/system-architecture.md](./docs/system-architecture.md)。CLI **不会**替你跑多个 agent、
+不会自动调第二个模型、也不会自进化任何东西。见产品契约
+[§6"v0.2 不得宣称的内容"](./docs/community-v0.2-product-contract.md#6-what-v02-must-not-claim)。
+
 **doctor 查什么**：五件事——① 个人画像（AI 懂不懂你怎么决策）② 项目背景（边界写没写）
 ③ 验收标准（"做完"定义了没）④ 交接路径（换对话能不能接上）⑤ 收割路径（产出有没有沉淀）。
 关键：只有**明确写成声明**（如"验收：…""完成标准…""交接卡：…"）才算 present；只是
 聊天里**顺口提到**不算（判 missing）——这正是它的价值：照出"聊过了"和"真写下来了"的差距。
+报给你的"首要断点"是**按固定顺序（①→⑤）数出来的第一个缺失项，不是按严重程度排的**——是该先补的
+那个缺口，不一定是危害最大的那个。
 
 **不确定哪个缺口是你的？** 从[痛点选择器](./docs/pain-selector.md)进。
 
 **看一个填好的例子**：同一个例子从乱输入一路跑到断点卡、填好的六件套 thread、before/after，
 都在 [docs/sample-room.md](./docs/sample-room.md)；卡片格式见
 [docs/breakpoint-card.md](./docs/breakpoint-card.md)。
+
+**10 分钟路径（零安装、不用 npm）**：不用装 Node、不用 `npx`、什么都不用装——按顺序读四篇文档，
+用你已经在用的助手就行。这是把现有页面串成一条路：
+1. **找到你的痛点（约 2 分钟）**：扫一眼[痛点选择器](./docs/pain-selector.md)，挑出像你的那条症状
+   （"新对话从零开始""长项目跑偏"……），它会指向你大概率缺的那个结构。
+2. **自查你自己的文字（约 3 分钟）**：打开[自查提示词](./docs/self-check.md)，连同你脱敏后的情况片段，
+   粘进你现有的 AI 工具（Claude、ChatGPT、Cursor……）。它跑的是和 CLI 一样的五项检查，返回一张断点卡——
+   不用装。
+3. **看一个填好的（约 3 分钟）**：读[样板间](./docs/sample-room.md)：一个合成案例，从乱输入 → 断点 →
+   填好的六件套 thread → before/after，让你看见"补好了"长什么样。
+4. **再上一层（约 2 分钟，选看）**：[进阶样板间](./docs/sample-room-advanced.md)走一条挑错 → 返工 →
+   放行 → 收割链，带一个独立守卫角色——这是*你亲手编排的方法*，不是 CLI 功能。
+
+**这条路往哪走**：上面全是免费、已发布的。更深、校准过的那层（多断点诊断、调好的审查 / 守卫 rubric）
+是**路线图 / 付费层**——见上面"已发布 vs. 路线图"那节，以及 [docs/system-architecture.md](./docs/system-architecture.md)
+的架构地图。想真在自己仓里把骨架搭起来？[走一遍](./docs/walkthrough.md)带你约 60 分钟做出一个可复用成果。
 
 **怎么用（三档·按你的技术程度选）**：
 ```bash
@@ -263,6 +369,17 @@ aict doctor basic --lang zh
   已经解决了"记忆/结构/沉淀"，不读外部协作规则，这套体系对它们是重复。
 - **一句话判断**：工具读 CLAUDE.md / AGENTS.md / 规则文件 → 适配；它有自己封闭的记忆和协作大脑、
   不读外部规则 → 用不上。
+
+**和规则同步工具怎么搭**：如果你已经在用成熟的规则同步工具，留着它——这俩是**互补、不是替代**，
+解决的问题不一样：
+- **[rulesync](https://github.com/dyoshikawa/rulesync) / [ruler](https://github.com/intellectronica/ruler)** 回答的是*"把同一份规则同步到我所有 AI 工具里"*——
+  一份真源，生成 / 应用到 `CLAUDE.md`、`.cursor/rules`、`.github/copilot-instructions.md` 等
+  20 多个目标。它们成熟、擅长分发。
+- **`aict doctor`** 回答的是另一个问题：*"我的协作结构到底齐不齐？"*——有没有画像、写没写背景、
+  定没定验收、有没有交接路径、有没有收割路径。它查的是**结构**，不是文件管道。
+- 合理搭配：用 **rulesync / ruler 同步规则文件**，用 **`aict doctor` 体检这些文件描述的协作结构
+  齐不齐**。（`aict init --tool` 自己也能生成几个规则文件，但那只是顺手的小便利——正经的多工具
+  同步，上面那两个专门工具做得更好。）
 
 **隐私边界**：默认本地——不上传、不遥测、不联网、不扫全盘、不强装 hook。详见
 `privacy-manifest.json` 与 `SECURITY.md`。把真实对话喂给 doctor 前，请先自行脱敏。

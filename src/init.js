@@ -74,6 +74,41 @@ const TOOLS = {
 
 const TOOL_NAMES = Object.keys(TOOLS);
 
+// The complete allowlist of relative paths `aict init` can ever create. uninstall()
+// will only delete a manifest entry if it is in this set, so a tampered or stale
+// manifest cannot make uninstall remove arbitrary user files. Keep in sync with
+// TEMPLATE_WRITES and TOOLS above.
+const MANAGED_RELATIVE_PATHS = new Set([
+  ...TEMPLATE_WRITES.map(([target]) => target),
+  ...Object.values(TOOLS).flatMap((tool) => tool.writes.map(([target]) => target)),
+  ".aict/install-manifest.json",
+]);
+
+// Resolve a manifest-listed relative path against cwd and confirm it is both
+// (a) inside cwd (no `../` escape, no absolute path) and (b) a path aict manages.
+// Returns { ok, absolute } or { ok: false, reason }.
+function resolveManagedTarget(relative, cwd) {
+  if (typeof relative !== "string" || relative.length === 0) {
+    return { ok: false, reason: "not a string" };
+  }
+  if (path.isAbsolute(relative)) {
+    return { ok: false, reason: "absolute path" };
+  }
+  const cwdResolved = path.resolve(cwd);
+  const absolute = path.resolve(cwdResolved, relative);
+  const rel = path.relative(cwdResolved, absolute);
+  const escapes = rel === ".." || rel.startsWith(".." + path.sep) || path.isAbsolute(rel);
+  if (escapes) {
+    return { ok: false, reason: "outside project directory" };
+  }
+  // Normalize to forward-slash form to compare against the allowlist keys.
+  const normalized = rel.split(path.sep).join("/");
+  if (!MANAGED_RELATIVE_PATHS.has(normalized)) {
+    return { ok: false, reason: "not an aict-managed file" };
+  }
+  return { ok: true, absolute };
+}
+
 const GENERATED_CONTENT = {
   ".aict/project-context.md": [
     "# Project Context",
@@ -231,23 +266,43 @@ function uninstall(flags, cwd) {
   }
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const files = [...new Set(manifest.files || [])].sort((a, b) => b.length - a.length);
+
+  // Safety gate: each manifest entry must resolve inside cwd AND be a path aict
+  // manages. Anything else (a `../` escape, an absolute path, or a file aict does
+  // not create) is refused so a tampered/stale manifest can never delete arbitrary
+  // user files outside the project.
+  const allowed = [];
+  const refused = [];
+  for (const relative of files) {
+    const resolved = resolveManagedTarget(relative, cwd);
+    if (resolved.ok) allowed.push({ relative, absolute: resolved.absolute });
+    else refused.push({ relative, reason: resolved.reason });
+  }
+
   if (flags.dryRun) {
     const lines = ["AICT uninstall", "Dry run: no files were removed.", "Would remove:"];
-    for (const file of files) lines.push("- " + file);
+    for (const { relative } of allowed) lines.push("- " + relative);
+    if (refused.length) {
+      lines.push("Refused (outside project or not aict-managed):");
+      for (const { relative, reason } of refused) lines.push("- " + relative + " (" + reason + ")");
+    }
     return lines.join("\n") + "\n";
   }
 
   const removed = [];
-  for (const relative of files) {
-    const target = path.join(cwd, relative);
-    if (fs.existsSync(target) && fs.statSync(target).isFile()) {
-      fs.unlinkSync(target);
+  for (const { relative, absolute } of allowed) {
+    if (fs.existsSync(absolute) && fs.statSync(absolute).isFile()) {
+      fs.unlinkSync(absolute);
       removed.push(relative);
     }
   }
   removeEmptyDirs(path.join(cwd, ".aict"), cwd);
   const lines = ["AICT uninstall", "Removed generated files:"];
   for (const file of removed) lines.push("- " + file);
+  if (refused.length) {
+    lines.push("Refused (outside project or not aict-managed):");
+    for (const { relative, reason } of refused) lines.push("- " + relative + " (" + reason + ")");
+  }
   if (flags.noNetwork) lines.push("Network: disabled");
   else lines.push("Network: not used");
   return lines.join("\n") + "\n";

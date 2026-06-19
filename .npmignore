@@ -1,0 +1,19 @@
+# Belt-and-suspenders publish exclusions.
+#
+# The published file set is driven by the "files" allowlist in package.json
+# (bin / src / templates / docs / README / LICENSE / privacy-manifest.json).
+# Anything below is extra insurance so internal or dev-only material never ships
+# even if that allowlist is loosened later.
+
+# Internal build-process docs (e.g. agentic-worker execution handoffs). These are
+# not product documentation and must not be published. Kept out of docs/ on purpose.
+internal/
+docs/drafts/
+
+# Dev-only artifacts.
+tests/
+.github/
+coverage/
+tmp/
+checksums.generated.txt
+.DS_Store

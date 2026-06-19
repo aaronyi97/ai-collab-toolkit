@@ -6,7 +6,7 @@ To remove files created by aict init, run this from the project where you initia
 aict init --uninstall
 ~~~
 
-The command reads .aict/install-manifest.json and removes only files listed there. It will not remove user-created files that are not in the manifest.
+The command reads .aict/install-manifest.json and removes only files listed there. Two safety gates apply to every entry before deletion: the path must resolve inside the current project directory (an entry with `../` or an absolute path is refused, never deleted), and the path must be one that `aict init` actually creates (a file aict does not manage is refused). So a tampered or stale manifest cannot make uninstall delete arbitrary files. Refused entries are listed in the output.
 
 Preview first:
 

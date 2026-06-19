@@ -389,7 +389,6 @@ const TEXT = {
     evidence: "Evidence: ",
     risk: "Risk: ",
     next: "Next action: ",
-    pro: "Pro acceleration: Deep diagnosis can compare multiple breakpoints and scenario patterns, but Community intentionally reports only this top visible break.",
     honesty: "Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.",
     redaction: (marker) => "Redaction note: sensitive-looking material was masked as " + marker + ".",
     explain: "Explain: doctor basic uses five public bilingual structure checks. Each check scans the input sentence-by-sentence for strong markers, generic weak signals, exact negations, and negation cues near a marker. A check is present only when it hits one explicit strong marker outside a negated context; bare Chinese topic words also need a declaration cue, so keyword stuffing does not count as structure. Generic weak signals are retained for debugging but do not promote a check to present. Exact negations or nearby negation cues force missing. It selects the first missing item. This is a public heuristic (structural probe), not an AI diagnosis; rules are open and no private weights or thresholds are published.",
@@ -403,7 +402,6 @@ const TEXT = {
     evidence: "Evidence 证据：",
     risk: "Risk 风险：",
     next: "Next action 下一步：",
-    pro: "Pro acceleration 进阶加速：深度诊断能对比多个断点和场景模式，但社区版刻意只报这一个最明显的断点。",
     honesty: "方法说明：public heuristic（公开启发式）——结构启发探针，非 AI 诊断；规则公开，不藏权重。",
     redaction: (marker) => "脱敏说明：疑似敏感内容已被遮罩为 " + marker + "。",
     explain: "Explain 说明：基础体检用五个公开的中英双语结构检查。每个检查按句逐句扫描输入里的强标记、泛词弱信号、精确否定，以及标记附近的否定线索。只有命中明确的强结构标记且不在否定语境里，才判为 present；中文裸主题词还需要像声明一样出现，单纯堆关键词不算结构。泛词弱信号只保留作调试参考，不会把检查项提升为 present。命中精确否定或附近否定线索就强制 missing。然后挑出第一个 missing 的项。这是一个 public heuristic（结构启发探针），不是 AI 诊断；规则公开，不发布任何私有权重或阈值。",
@@ -449,7 +447,6 @@ export function formatDoctorReport({ text, source, flags }) {
   lines.push(t.evidence + result.evidence);
   lines.push(t.risk + (lang === "zh" ? top.riskZh : top.risk));
   lines.push(t.next + (lang === "zh" ? top.nextZh : top.next));
-  lines.push(t.pro);
   lines.push(t.honesty);
   const redactedAll = redact(text);
   if (redactedAll !== String(text)) {

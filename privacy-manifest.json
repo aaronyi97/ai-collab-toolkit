@@ -10,7 +10,16 @@
   "commands": {
     "init": {
       "reads": ["bundled templates inside this npm package", "current working directory path"],
-      "writes": [".aict/** in the current working directory"],
+      "writes": [
+        ".aict/** in the current working directory",
+        "CLAUDE.md (only with --tool claude / --tool all)",
+        "AGENTS.md (only with --tool codex / --tool all)",
+        ".cursor/rules/ai-collab.mdc (only with --tool cursor / --tool all)",
+        ".windsurf/rules/ai-collab.md (only with --tool windsurf / --tool all)",
+        ".github/copilot-instructions.md (only with --tool copilot / --tool all)",
+        ".clinerules (only with --tool cline / --tool all)"
+      ],
+      "writesNote": "Without --tool, init writes only under .aict/. The tool-specific paths above are written only when --tool <name> or --tool all is passed, and only if the file does not already exist (existing files are skipped, never overwritten). Every write is recorded in .aict/install-manifest.json for --uninstall.",
       "network": "none",
       "destructiveByDefault": false,
       "dryRunSupported": true,
@@ -31,7 +40,7 @@
   },
   "globalFlags": {
     "--dry-run": "Preview writes and do not change disk.",
-    "--no-network": "Require offline behavior. Community commands do not need network.",
+    "--no-network": "Signals offline intent; core commands make no network calls by design. Not a runtime-enforced network sandbox.",
     "--explain": "Print local rule and path reasoning.",
     "--uninstall": "Remove files listed in .aict/install-manifest.json."
   },

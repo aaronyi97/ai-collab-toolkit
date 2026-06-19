@@ -6,9 +6,10 @@
 
 1. **Data exposure via `doctor` input.** `doctor basic` reads text you provide
    (`--input` / `--input-file` / stdin). If you paste real AI conversation logs,
-   they may contain secrets, customer data, or private paths. The tool runs fully
-   offline and never uploads, but **you** are responsible for redacting sensitive
-   material before piping it in. `doctor` masks obvious secret-like tokens and
+   they may contain secrets, customer data, or private paths. The `doctor` command
+   makes no network calls and never uploads, but **you** are responsible for
+   redacting sensitive material before piping it in. `doctor` masks obvious
+   secret-like tokens and
    local user paths in its evidence output, but this is a best-effort mask, not a
    DLP system.
 2. **Secrets in committed files.** `.gitignore` excludes `*.key`, `.env*`, and
@@ -19,7 +20,11 @@
 
 ## Defaults (what it will NOT do)
 
-- No network requests in core commands. `--no-network` is testable and enforced.
+- No network requests in core commands **by design**. `--no-network` documents and
+  signals this intent (it sets an env flag and prints a `Network: disabled` label);
+  it is **not** a runtime-enforced network sandbox, and nothing in the tool blocks a
+  socket. The first `npx ai-collab-toolkit` still contacts the npm registry to fetch
+  the package.
 - No telemetry, no analytics, no phone-home.
 - No whole-disk scan; `init` writes only under the target project.
 - No forced hooks, no config overwrites without a `--dry-run` preview.

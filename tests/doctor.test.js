@@ -139,15 +139,17 @@ const EN_LONG_LOG = [
 ].join("\n");
 
 describe("doctor basic — contract and redaction", () => {
-  it("prints the five-part contract for the built-in sample", () => {
+  it("prints the four-part contract for the built-in sample", () => {
     const output = runAict(["doctor", "basic"]);
 
     assert.match(output, /Top breakpoint:/);
     assert.match(output, /Evidence:/);
     assert.match(output, /Risk:/);
     assert.match(output, /Next action:/);
-    assert.match(output, /Pro acceleration:/);
     assert.match(output, /Structure checks:/);
+    // The unconditional "Pro acceleration" upsell line was removed: Community
+    // doctor must not advertise an unshipped paid layer in its core output.
+    assert.equal(output.includes("Pro acceleration"), false);
   });
 
   it("includes the honesty / public-heuristic disclosure", () => {
@@ -352,7 +354,7 @@ describe("doctor basic — bilingual heuristic", () => {
 });
 
 describe("doctor basic — --lang", () => {
-  it("--lang zh produces a Chinese report and still keeps the 5-part contract", () => {
+  it("--lang zh produces a Chinese report and still keeps the 4-part contract", () => {
     const output = runAict(["doctor", "basic", "--lang", "zh"], {
       input: ZH_MISSING_ACCEPTANCE,
     });
@@ -361,13 +363,15 @@ describe("doctor basic — --lang", () => {
     assert.match(output, /首要断点/);
     assert.match(output, /工作流体检/);
 
-    // Five-part contract anchors still present (bilingual labels keep the
+    // Four-part contract anchors still present (bilingual labels keep the
     // English keys so downstream tooling/contract stays stable).
     assert.match(output, /Top breakpoint/);
     assert.match(output, /Evidence/);
     assert.match(output, /Risk/);
     assert.match(output, /Next action/);
-    assert.match(output, /Pro acceleration/);
+
+    // The Pro acceleration upsell line is gone from the zh report too.
+    assert.equal(output.includes("Pro acceleration"), false);
 
     // Honesty disclosure localized but still says public heuristic.
     assert.match(output, /public heuristic/);
