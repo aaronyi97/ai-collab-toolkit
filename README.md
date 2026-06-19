@@ -7,6 +7,25 @@ Copilot, Codex, Cline).
 
 > 中文用户请直接看末尾的 [中文说明 / Chinese guide](#中文说明--chinese-guide)。
 
+### What you'll see in 30 seconds
+
+Paste your messy situation; it names the one structure to write down first:
+
+```
+- Personal profile: present
+- Project context: present
+- Acceptance standard: present
+- Handoff path: missing          ← the one gap it names
+- Output harvest path: missing
+
+Top breakpoint: Handoff path is missing.
+Next action: Add a handoff note with current state, evidence, blocker, and next action.
+```
+
+See the [full before / after](#before--after) below, a complete filled example in
+the [sample room](./docs/sample-room.md), and a hand-run
+[guard challenges → rework → release](./docs/sample-room-advanced.md) loop.
+
 ---
 
 ## Before you start / 开始前必读
@@ -122,10 +141,12 @@ AI:   what launch plan? let's start fresh ...
 → every session restarts · nothing accumulates · "done" was never defined
 ```
 
-**With `doctor basic`** (it names the first gap):
+**With `doctor basic`** (mixed input → it names the first real gap). Here profile,
+context, and acceptance are written down, so they read **present**; the handoff is
+missing, so that is the named breakpoint:
 
 ```
-$ aict doctor basic --input "Project context: weekend prototype for solo founders. Profile: founder prefers direct risk calls. The conversation has no acceptance standard and no handoff note."
+$ node bin/aict.js doctor basic --input "Project context: weekend prototype for solo founders. Profile: founder prefers direct risk calls. Acceptance: done means a tester finishes onboarding unaided. There is no handoff note, so the next chat starts from zero."
 
 AICT doctor basic
 Network: not used
@@ -134,14 +155,14 @@ Input: --input
 Structure checks:
 - Personal profile: present
 - Project context: present
-- Acceptance standard: missing
+- Acceptance standard: present
 - Handoff path: missing
 - Output harvest path: missing
 
-Top breakpoint: Acceptance standard is missing. [Acceptance standard]
-Evidence: The conversation has no acceptance standard and no handoff note.
-Risk: The work can look complete while nobody has defined what would count as done.
-Next action: Write three bullets beginning with done means, evidence is, and still not done if.
+Top breakpoint: Handoff path is missing. [Handoff path]
+Evidence: There is no handoff note, so the next chat starts from zero.
+Risk: A future session may restart from scratch or trust stale context.
+Next action: Add a handoff note with current state, evidence, blocker, and next action.
 Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.
 ```
 
@@ -154,16 +175,22 @@ card → filled six-piece thread → before/after — in
 
 ---
 
-## 30-second try (no install)
+## 30-second try (clone & run)
+
+The package is **not on npm yet**, so the verified path today is a git clone — no
+install step, just clone and run with Node:
 
 ```bash
-npx ai-collab-toolkit doctor basic --input "we chatted about a launch, no acceptance, no handoff"
+git clone https://github.com/aaronyi97/ai-collab-toolkit
+cd ai-collab-toolkit
+node bin/aict.js doctor basic --input "we chatted about a launch, no acceptance, no handoff"
 ```
 
 You'll get the four-part report (breakpoint / evidence / risk / next action) on
-your own text. The `doctor` command itself makes no network calls at runtime; the
-first `npx`/`npm install` does download the package from the npm registry (after
-that you can run it offline).
+your own text. `doctor` makes no network calls at runtime.
+
+> Once published, `npx ai-collab-toolkit doctor basic` will work too — **npm
+> publish 后可用; for now please use the clone above.**
 
 ---
 
@@ -200,17 +227,20 @@ Want to actually build the skeleton in your own repo? The
 Three paths, by comfort level:
 
 ```bash
-# 1) Zero-install, just try it
-npx ai-collab-toolkit doctor basic
+# 1) Clone & run — the verified path today (npm not published yet)
+git clone https://github.com/aaronyi97/ai-collab-toolkit
+cd ai-collab-toolkit
+node bin/aict.js doctor basic
 
-# 2) Install the short `aict` command
-npm install -g ai-collab-toolkit
-aict doctor basic
+# 2) npx / global install — npm 发布后可用 (not published yet)
+#    npx ai-collab-toolkit doctor basic
+#    npm install -g ai-collab-toolkit && aict doctor basic
 
-# 3) No npm? Copy templates by hand — see docs/manual-setup.md
+# 3) No Node at all? Copy templates by hand — see docs/manual-setup.md
 ```
 
-Requires Node.js >= 18.
+Requires Node.js >= 18. The `npx` / `npm install -g` lines are commented out
+because the package is **not on npm yet**; they will work once it is published.
 
 ---
 
@@ -283,6 +313,15 @@ redact secrets first. The toolkit masks obvious ones but is not a DLP system.
 
 ---
 
+## Pro Pack (early, optional)
+
+A **Pro Pack** — deeper multi-breakpoint diagnosis and a human calibration pass — is
+in small-scale validation, not shipped. Everything above stays free. If you'd want
+it, open an issue tagged `[pro]` or leave an email there. No pressure; the Community
+probe never needs it to do its job.
+
+---
+
 ## Licensing
 
 Code: **Apache-2.0** ([LICENSE](./LICENSE)). Docs / templates / generated starter
@@ -348,14 +387,16 @@ text: **CC BY 4.0** ([LICENSE-DOCS](./LICENSE-DOCS)). Contributions: see
 是**路线图 / 付费层**——见上面"已发布 vs. 路线图"那节，以及 [docs/system-architecture.md](./docs/system-architecture.md)
 的架构地图。想真在自己仓里把骨架搭起来？[走一遍](./docs/walkthrough.md)带你约 60 分钟做出一个可复用成果。
 
-**怎么用（三档·按你的技术程度选）**：
+**怎么用（npm 还没发布·当前用 clone 直跑）**：
 ```bash
-# 零安装试一下
-npx ai-collab-toolkit doctor basic --input "聊了发布计划，但没有验收，也没有交接"
-# 装上短命令
-npm install -g ai-collab-toolkit
-aict doctor basic --lang zh
-# 不想装 npm？手动拷模板，见 docs/manual-setup.md
+# 1) clone 直跑——当前已验证的路径（npm 尚未发布）
+git clone https://github.com/aaronyi97/ai-collab-toolkit
+cd ai-collab-toolkit
+node bin/aict.js doctor basic --lang zh --input "聊了发布计划，但没有验收，也没有交接"
+# 2) npx / 全局安装——npm 发布后可用（现在还跑不了）
+#    npx ai-collab-toolkit doctor basic
+#    npm install -g ai-collab-toolkit && aict doctor basic --lang zh
+# 3) 连 Node 都不想装？手动拷模板，见 docs/manual-setup.md
 ```
 
 **多工具支持**：`aict init --tool <claude|cursor|windsurf|copilot|cline|codex|all>`
@@ -383,3 +424,6 @@ aict doctor basic --lang zh
 
 **隐私边界**：默认本地——不上传、不遥测、不联网、不扫全盘、不强装 hook。详见
 `privacy-manifest.json` 与 `SECURITY.md`。把真实对话喂给 doctor 前，请先自行脱敏。
+
+**Pro Pack（早期·可选）**：更深的多断点诊断 + 一次人工校准，正在小范围验证、尚未发布。
+上面的全部免费。想要就开 issue 标 `[pro]` 或在里面留个邮箱——不强求，社区版的探针本身从不需要它。

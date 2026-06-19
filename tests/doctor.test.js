@@ -334,6 +334,72 @@ describe("doctor basic — bilingual heuristic", () => {
     assert.equal(top.status, "present");
   });
 
+  it("treats a labelled stub with an empty value as missing (EN and ZH)", () => {
+    // An init stub like "Acceptance:\n" with nothing after the colon is a bare
+    // placeholder, not written structure. Both languages must read it missing;
+    // neither should be fooled into "present".
+    const en = analyzeWorkflow("profile:\ngoal:\nacceptance:\nhandoff note:\nharvest:");
+    const enById = Object.fromEntries(en.checks.map((c) => [c.id, c.status]));
+    assert.equal(enById.profile, "missing", "empty 'profile:' must be missing");
+    assert.equal(enById.context, "missing", "empty 'goal:' must be missing");
+    assert.equal(enById.acceptance, "missing", "empty 'acceptance:' must be missing");
+    assert.equal(enById.handoff, "missing", "empty 'handoff note:' must be missing");
+    assert.equal(enById.harvest, "missing", "empty 'harvest:' must be missing");
+
+    const zh = analyzeWorkflow("个人画像：\n项目背景：\n验收：\n交接卡：\n收割：");
+    const zhById = Object.fromEntries(zh.checks.map((c) => [c.id, c.status]));
+    assert.equal(zhById.acceptance, "missing", "empty '验收：' must be missing");
+    assert.equal(zhById.handoff, "missing", "empty '交接卡：' must be missing");
+    assert.equal(zhById.harvest, "missing", "empty '收割：' must be missing");
+  });
+
+  it("does not quote a bare empty label as Evidence (EN and ZH)", () => {
+    // An all-empty-stub input like "profile:\ngoal:\nacceptance:" must NOT have
+    // the empty "profile:" label echoed back as Evidence — parroting an empty
+    // placeholder is not testimony. Evidence falls back to the honest null so
+    // the report prints "no direct evidence line".
+    const en = analyzeWorkflow("profile:\ngoal:\nacceptance:");
+    assert.equal(en.top.id, "profile");
+    assert.equal(en.evidence, null, "empty 'profile:' stub must not be quoted as evidence");
+
+    const enReport = formatDoctorReport({
+      text: "profile:\ngoal:\nacceptance:",
+      source: "unit-test",
+      flags: {},
+    });
+    assert.match(enReport, /no direct evidence line/);
+    assert.equal(enReport.includes("Evidence: profile:"), false);
+
+    const zhReport = formatDoctorReport({
+      text: "个人画像：\n项目背景：\n验收：",
+      source: "unit-test",
+      flags: { lang: "zh" },
+    });
+    assert.match(zhReport, /没有直接证据句/);
+    assert.equal(zhReport.includes("Evidence 证据：个人画像："), false);
+  });
+
+  it("still quotes a real placeholder-word denial as Evidence (not screened out)", () => {
+    // The empty-label screen must NOT swallow genuine denials: "Acceptance: nope"
+    // carries real content and stays quotable.
+    const { top, evidence } = analyzeWorkflow(EN_NEGATED_MARKER_VALUES);
+    assert.equal(top.id, "acceptance");
+    assert.match(evidence, /Acceptance: nope/);
+  });
+
+  it("flags the all-missing point-breaker and an honest no-evidence note", () => {
+    const out = formatDoctorReport({
+      text: "we chatted about a launch, no acceptance, no handoff",
+      source: "unit-test",
+      flags: {},
+    });
+    // The all-missing point-breaker fires.
+    assert.match(out, /No structured markers found at all/);
+    // Evidence is honest about absence rather than quoting an unrelated line.
+    assert.match(out, /no direct evidence line/);
+    assert.equal(out.includes("Evidence: we chatted about a launch"), false);
+  });
+
   it("does NOT flag an English long log full of weak words as present", () => {
     const { checks } = analyzeWorkflow(EN_LONG_LOG);
 

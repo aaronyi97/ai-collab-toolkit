@@ -27,6 +27,20 @@ describe("init and demo", () => {
     assert.equal(fs.existsSync(path.join(workspace, ".aict")), false);
   });
 
+  it("init --dry-run still ends with next-step guidance, tensed for preview", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aict-test-"));
+    const en = runAict(["init", "--dry-run"], workspace);
+    // Dry run is what a new user reaches for first, so it must not dead-end at
+    // "Network:" with no idea what to do — but the tense must be honest.
+    assert.match(en, /preview only — nothing was written yet/);
+    assert.match(en, /fill the blank fields/);
+    assert.match(en, /watch a check flip from missing to present/);
+
+    const zh = runAict(["init", "--dry-run", "--lang", "zh"], workspace);
+    assert.match(zh, /仅预览——还没写任何文件/);
+    assert.match(zh, /把空字段填上/);
+  });
+
   it("init writes a manifest and --uninstall removes generated files", () => {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aict-test-"));
 

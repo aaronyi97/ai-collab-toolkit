@@ -1,10 +1,16 @@
 import fs from "node:fs";
 import { redact } from "./redact.js";
 
+// The built-in sample deliberately lands on a DIFFERENT breakpoint than the
+// other shipped examples (README → handoff, sample-room → acceptance, this one
+// → harvest) so a new user does not see the same gap everywhere and assume the
+// probe only ever reports one thing. Here profile/context/acceptance/handoff are
+// all written down; only the harvest path is missing.
 export const BUILT_IN_SAMPLE = [
   "A solo founder asks an AI assistant to turn a rough product idea into a launch checklist.",
   "Project context: a weekend prototype for solo founders. Profile: the founder prefers direct, fast risk calls.",
-  "The conversation has no acceptance standard, no handoff note, and no place to harvest reusable output."
+  "Acceptance: done means a tester finishes onboarding unaided. Handoff note: the next session resumes from the drafted screens and the open blocker.",
+  "There is no harvest path, so reusable output vanishes into the chat."
 ].join(" ");
 
 // Bilingual (English + Chinese) structure detection.
@@ -226,6 +232,12 @@ function isMarkerStuffedFieldValue(value) {
 
 function isMissingFieldValue(value) {
   const normalized = normalizeFieldValue(value);
+  // A label with no value at all ("acceptance:" / "验收：" with nothing after the
+  // colon) is a bare placeholder, not a written structure. Treat it as missing
+  // in both languages — otherwise an empty labelled stub reads as present.
+  if (normalized.length === 0) {
+    return true;
+  }
   return EN_EMPTY_FIELD_VALUE.test(normalized) ||
     ZH_EMPTY_FIELD_VALUE.test(normalized) ||
     isMarkerStuffedFieldValue(value);
@@ -353,15 +365,68 @@ export function analyzeWorkflow(rawText) {
   });
 
   const top = checks.find((check) => check.status === "missing") ?? NO_BREAKPOINT;
-  return { checks, top, evidence: evidenceSentence(text, top) };
+  const allMissing = checks.length > 0 && checks.every((check) => check.status === "missing");
+  return { checks, top, allMissing, evidence: evidenceSentence(text, top) };
 }
 
+// A segment is a "bare empty-label line" for `top` when its only tie to the top
+// item is a marker label with nothing written after the colon (e.g. "profile:"
+// or "验收："). That is a placeholder, not testimony — quoting it as Evidence
+// just parrots the empty stub back at the user. A real denial ("no profile",
+// "Acceptance: nope", "从没写过验收") carries actual content and stays quotable;
+// this only screens out the content-free empty-label case so the caller can fall
+// back to the honest "no direct evidence line" note.
+function isBareEmptyLabelLine(segmentLower, top) {
+  const markerSignals = [...top.strongSignals, ...top.weakSignals];
+  let sawEmptyLabel = false;
+  for (const signal of markerSignals) {
+    const needle = signal.toLowerCase();
+    for (const index of signalPositions(segmentLower, needle)) {
+      const fieldValue = fieldValueAfterSignal(segmentLower, needle, index);
+      // A real denial near the marker (no field value, but "no ..." / "missing"
+      // / "从没写过" cues) is quotable content — not a bare label.
+      if (fieldValue === null) {
+        if (isNegatedSignal(segmentLower, needle, index)) {
+          return false;
+        }
+        continue;
+      }
+      // A labelled field whose value is a placeholder WORD ("nope", "none",
+      // "tbd", "无") is real, quotable evidence. Only a truly empty value
+      // (nothing after the colon) is a bare label.
+      if (normalizeFieldValue(fieldValue).length === 0) {
+        sawEmptyLabel = true;
+      } else {
+        return false;
+      }
+    }
+  }
+  if (!sawEmptyLabel) {
+    return false;
+  }
+  // The line tied to `top` only via empty labels. Make sure the line as a whole
+  // has no explicit top-level negation phrase worth quoting either.
+  return !hasExplicitNegation(top, segmentLower);
+}
+
+// Find the input line that is actual evidence for the *reported* breakpoint.
+// We only ever quote a line tied to the top item: an explicit denial of it, a
+// negated marker of it, or (for a present "no breakpoint" result) a strong
+// marker of it. If nothing in the input relates to the reported item, we return
+// null rather than hard-pasting an unrelated first sentence — the caller then
+// prints an honest "no direct evidence line" note. (Quoting sentence #1 when it
+// has nothing to do with the named gap is misleading.) An empty-label stub
+// ("profile:" with nothing after it) is likewise not quoted: see
+// isBareEmptyLabelLine — parroting an empty placeholder is not evidence.
 function evidenceSentence(text, top) {
   const segments = splitSegments(text);
   const segmentsLower = segments.map((segment) => segment.toLowerCase());
   if (top.status === "missing") {
     const negated = segments.find((segment, index) => {
       const lower = segmentsLower[index];
+      if (isBareEmptyLabelLine(lower, top)) {
+        return false;
+      }
       return hasExplicitNegation(top, lower) || segmentHasNegatedMarkerAt(top, segmentsLower, index);
     });
     if (negated) {
@@ -375,8 +440,12 @@ function evidenceSentence(text, top) {
     const lower = segment.toLowerCase();
     return markers.some((marker) => lower.includes(marker));
   });
-  const fallback = matched || segments[0] || text;
-  return redact(fallback).slice(0, 260);
+  if (matched) {
+    return redact(matched).slice(0, 260);
+  }
+  // No line relates to the reported item. Be honest instead of quoting an
+  // unrelated sentence.
+  return null;
 }
 
 const TEXT = {
@@ -385,8 +454,10 @@ const TEXT = {
     network: (off) => "Network: " + (off ? "disabled" : "not used"),
     input: (source) => "Input: " + source,
     structure: "Structure checks:",
+    allMissing: "No structured markers found at all — that is itself the signal: the structure is in your head, not written down.",
     top: "Top breakpoint: ",
     evidence: "Evidence: ",
+    noEvidence: "no direct evidence line — the marker is simply absent from your input.",
     risk: "Risk: ",
     next: "Next action: ",
     honesty: "Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.",
@@ -398,8 +469,10 @@ const TEXT = {
     network: (off) => "Network 网络：" + (off ? "已禁用" : "未使用"),
     input: (source) => "Input 输入来源：" + source,
     structure: "结构检查：",
+    allMissing: "五项结构标记一个都没找到——这本身就是信号：结构还在你脑子里，没写下来。",
     top: "Top breakpoint 首要断点：",
     evidence: "Evidence 证据：",
+    noEvidence: "没有直接证据句——这个标记在你的输入里根本就没出现。",
     risk: "Risk 风险：",
     next: "Next action 下一步：",
     honesty: "方法说明：public heuristic（公开启发式）——结构启发探针，非 AI 诊断；规则公开，不藏权重。",
@@ -442,9 +515,13 @@ export function formatDoctorReport({ text, source, flags }) {
     const checkLabel = lang === "zh" ? check.labelZh : check.label;
     lines.push("- " + checkLabel + ": " + check.status);
   }
+  if (result.allMissing) {
+    lines.push("");
+    lines.push(t.allMissing);
+  }
   lines.push("");
   lines.push(t.top + (lang === "zh" ? top.breakpointZh : top.breakpoint) + " [" + label + "]");
-  lines.push(t.evidence + result.evidence);
+  lines.push(t.evidence + (result.evidence ?? t.noEvidence));
   lines.push(t.risk + (lang === "zh" ? top.riskZh : top.risk));
   lines.push(t.next + (lang === "zh" ? top.nextZh : top.next));
   lines.push(t.honesty);

@@ -65,6 +65,11 @@ Pro acceleration: (optional) A paid layer could compare multiple breakpoints and
 Watch this exact case run from messy input to filled thread in
 [docs/sample-room.md](./sample-room.md).
 
+> **Pro Pack (early, optional).** A paid layer that compares multiple breakpoints
+> and runs a human calibration pass is in small-scale validation, not shipped. The
+> card's four CLI fields stay free. If you'd want it, open an issue tagged `[pro]`
+> or leave an email there — never required to close a gap.
+
 ---
 
 # 断点卡（输出格式 · 中文）
@@ -125,3 +130,7 @@ Pro acceleration 进阶加速：（可选）付费层能对比多个断点和场
 ```
 
 到 [docs/sample-room.md](./sample-room.md) 看这个例子从乱输入一路跑到填好的 thread。
+
+> **Pro Pack（早期·可选）**：一个付费层——对比多个断点 + 一次人工校准——正在小范围验证、
+> 尚未发布。卡片里 CLI 真出的四个字段始终免费。想要就开 issue 标 `[pro]` 或留个邮箱——
+> 补缺口本身从不需要它。

@@ -32,10 +32,12 @@
 
 ## Reporting a vulnerability
 
-Please open a private security advisory on the project's GitHub repository, or
-email the maintainer listed in `package.json`. Include reproduction steps and the
-affected version. This is an experimental project maintained on a best-effort
-basis; we aim to acknowledge reports within a reasonable window.
+Please open a private security advisory on the project's GitHub repository
+(Security → Report a vulnerability), or open a regular issue at
+<https://github.com/aaronyi97/ai-collab-toolkit/issues> if it is not sensitive.
+Include reproduction steps and the affected version. This is an experimental
+project maintained on a best-effort basis; we aim to acknowledge reports within a
+reasonable window.
 
 ## Releases
 

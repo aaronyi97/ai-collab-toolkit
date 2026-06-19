@@ -139,6 +139,44 @@ function readToolSelection(argv = process.argv) {
   return { tool: value };
 }
 
+// Read --lang directly from argv so init can localize its next-step hint without
+// the shared arg parser having to forward it. English is the default.
+function readLang(argv = process.argv) {
+  const index = argv.indexOf("--lang");
+  if (index !== -1) {
+    const value = (argv[index + 1] || "").toLowerCase();
+    if (value === "zh" || value === "en") return value;
+  }
+  return "en";
+}
+
+// Three concrete next steps a user can actually follow right after init: open a
+// stub and fill it, re-run doctor to watch a check flip missing -> present, then
+// paste the filled thread as the first message of the next AI chat.
+const NEXT_STEPS = {
+  en: [
+    "Next steps:",
+    "1. Open .aict/project-context.md and .aict/acceptance.md and fill the blank fields (goal, audience, done means, ...).",
+    "2. Re-run `node bin/aict.js doctor basic --input-file .aict/acceptance.md` and watch a check flip from missing to present.",
+    "3. Paste your filled .aict/ files as the first message of your next AI chat, so the new session starts with structure instead of from zero.",
+  ],
+  zh: [
+    "下一步：",
+    "1. 打开 .aict/project-context.md 和 .aict/acceptance.md，把空字段填上（目标、受众、做完意味着……）。",
+    "2. 再跑一次 `node bin/aict.js doctor basic --input-file .aict/acceptance.md`，看着某一项从 missing 变成 present。",
+    "3. 把填好的 .aict/ 文件粘成下一个 AI 对话的第一条消息，新对话就带着结构开场、而不是从零开始。",
+  ],
+};
+
+// Dry-run shows the SAME three next steps, but a leading note makes the tense
+// honest: nothing was written yet, so these are the steps to take *after* a real
+// run. Without this, a new user (who often tries --dry-run first) sees the plan
+// and then no guidance at all on what to do next.
+const DRY_RUN_NEXT_STEP_NOTE = {
+  en: "Next steps (preview only — nothing was written yet; after a real `init` run, follow these three steps):",
+  zh: "下一步（仅预览——还没写任何文件；真正跑 `init` 写盘后，照下面这 3 步走）：",
+};
+
 // Resolve a --tool value to the list of [target, templatePath] writes.
 // Returns { writes, selected } or { error } for an unknown tool.
 function resolveToolWrites(tool) {
@@ -224,6 +262,10 @@ export function runInit(flags, cwd = process.cwd()) {
   if (flags.explain) {
     lines.push(explainLine(selectedTools));
   }
+  lines.push("");
+  for (const step of (NEXT_STEPS[readLang()] || NEXT_STEPS.en)) {
+    lines.push(step);
+  }
   return lines.join("\n") + "\n";
 }
 
@@ -239,6 +281,15 @@ function formatDryRun(planned, flags, selectedTools) {
   else lines.push("Network: not used");
   if (flags.explain) {
     lines.push("Explain: these files are generated from bundled templates; no project files outside the listed paths are changed.");
+  }
+  const lang = readLang();
+  lines.push("");
+  lines.push(DRY_RUN_NEXT_STEP_NOTE[lang] || DRY_RUN_NEXT_STEP_NOTE.en);
+  // Reuse the real next-step body, minus its own "Next steps:" header (the
+  // dry-run note above already serves as the header), so the two paths never
+  // drift apart.
+  for (const step of (NEXT_STEPS[lang] || NEXT_STEPS.en).slice(1)) {
+    lines.push(step);
   }
   return lines.join("\n") + "\n";
 }
