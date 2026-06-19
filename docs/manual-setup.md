@@ -3,6 +3,9 @@
 You do not need the CLI to use this collaboration skeleton. Everything is plain
 text. Copy the templates into the paths your AI tool expects.
 
+New here? The [walkthrough](./walkthrough.md) takes you from zero to one filled
+artifact in about an hour.
+
 The structure is **one core contract + thin tool shells**:
 
 - `templates/rules/_core-contract.md` is the single source of truth.
@@ -66,6 +69,8 @@ The structure is **one core contract + thin tool shells**:
 # 手动接入（不装 npm · 中文）
 
 不装 CLI 也能用这套协作骨架。全是纯文本，把模板拷到你的 AI 工具认的路径即可。
+
+第一次用？[走一遍](./walkthrough.md)带你大约一小时从零做出一个填好的成果。
 
 结构是 **一个核心契约 + 各工具薄壳**：
 

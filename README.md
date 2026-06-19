@@ -23,6 +23,10 @@ finished product. Please calibrate your expectations:
 - The templates are starting points, not authority. Adapt them to your team.
 - No warranty. Issues / PRs may not get a fast response.
 
+Planning note for early testers / contributors: the Community v0.2 product
+contract lives in [`docs/community-v0.2-product-contract.md`](./docs/community-v0.2-product-contract.md).
+It describes the intended next iteration; it is not a shipped feature list.
+
 If that's the deal you want, read on.
 
 ---
@@ -78,14 +82,33 @@ AI:   what launch plan? let's start fresh ...
 **With `doctor basic`** (it names the first gap):
 
 ```
-$ aict doctor basic --input "AI gave a 12-step launch plan, no acceptance, no handoff"
+$ aict doctor basic --input "Project context: weekend prototype for solo founders. Profile: founder prefers direct risk calls. The conversation has no acceptance standard and no handoff note."
 
-Top breakpoint: Acceptance standard is missing.
-Evidence: "... no acceptance ..."
-Risk: The work can look complete while nobody defined what counts as done.
-Next action: Write three bullets — done means / evidence is / still not done if.
-→ now you know the FIRST thing to fix.
+AICT doctor basic
+Network: not used
+Input: --input
+
+Structure checks:
+- Personal profile: present
+- Project context: present
+- Acceptance standard: missing
+- Handoff path: missing
+- Output harvest path: missing
+
+Top breakpoint: Acceptance standard is missing. [Acceptance standard]
+Evidence: The conversation has no acceptance standard and no handoff note.
+Risk: The work can look complete while nobody has defined what would count as done.
+Next action: Write three bullets beginning with done means, evidence is, and still not done if.
+Pro acceleration: Deep diagnosis can compare multiple breakpoints and scenario patterns, but Community intentionally reports only this top visible break.
+Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.
 ```
+
+**Not sure which gap is yours?** Start from the [pain selector](./docs/pain-selector.md).
+
+**See it filled in:** the same example runs end-to-end — messy input → breakpoint
+card → filled six-piece thread → before/after — in
+[docs/sample-room.md](./docs/sample-room.md). The card format it speaks is
+[docs/breakpoint-card.md](./docs/breakpoint-card.md).
 
 ---
 
@@ -204,10 +227,20 @@ text: **CC BY 4.0** ([LICENSE-DOCS](./LICENSE-DOCS)). Contributions: see
 规则全部公开在 `src/doctor.js`，没有任何隐藏权重。它不替你解决问题，只告诉你
 **第一个缺失的结构在哪**。
 
+早期测试者 / 贡献者可以看
+[`docs/community-v0.2-product-contract.md`](./docs/community-v0.2-product-contract.md)，
+里面写的是 Community v0.2 的产品契约和下一步方向，不代表这些功能已经全部发布。
+
 **doctor 查什么**：五件事——① 个人画像（AI 懂不懂你怎么决策）② 项目背景（边界写没写）
 ③ 验收标准（"做完"定义了没）④ 交接路径（换对话能不能接上）⑤ 收割路径（产出有没有沉淀）。
 关键：只有**明确写成声明**（如"验收：…""完成标准…""交接卡：…"）才算 present；只是
 聊天里**顺口提到**不算（判 missing）——这正是它的价值：照出"聊过了"和"真写下来了"的差距。
+
+**不确定哪个缺口是你的？** 从[痛点选择器](./docs/pain-selector.md)进。
+
+**看一个填好的例子**：同一个例子从乱输入一路跑到断点卡、填好的六件套 thread、before/after，
+都在 [docs/sample-room.md](./docs/sample-room.md)；卡片格式见
+[docs/breakpoint-card.md](./docs/breakpoint-card.md)。
 
 **怎么用（三档·按你的技术程度选）**：
 ```bash

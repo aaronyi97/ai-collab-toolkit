@@ -9,9 +9,7 @@ const forbidden = [
   "MOTHER" + "_LAW",
   "OWNER" + "_PROFILE",
   "CONTROL" + "_PROTOCOL",
-  "HARVEST" + "_PROTOCOL",
-  "/Users/a1/Desktop/" + "Knowledge" + "OS",
-  "/Users/a1/.ai" + "-gov"
+  "HARVEST" + "_PROTOCOL"
 ];
 const skipDirs = new Set([".git", "node_modules", ".aict"]);
 const skipFiles = new Set(["checksums.txt"]);

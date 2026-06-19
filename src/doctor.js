@@ -10,14 +10,17 @@ export const BUILT_IN_SAMPLE = [
 // Bilingual (English + Chinese) structure detection.
 //
 // Each check defines three signal classes:
-//   - strongSignals: explicit structured markers. A single hit => present.
-//   - weakSignals:   generic words. One alone is not enough; need >= 2 distinct
-//                    weak signals (and no negation) to count as present.
+//   - strongSignals: explicit structured markers. A positive hit => present.
+//                    Bare CJK topic nouns need a declaration cue; name-dropping
+//                    "验收 收割 项目背景" is not structure.
+//   - weakSignals:   generic words retained for debugging/evidence only.
 //   - negations:     explicit denials. Any hit forces missing.
 //
 // Detection scans the input sentence-by-sentence (so a long log cannot be
 // judged "present" just because unrelated generic words happen to co-occur far
-// apart), then aggregates the signal sets across all sentences.
+// apart), then aggregates the signal sets across all sentences. Negation near a
+// marker wins over the marker itself: "Acceptance: nope" and "从没写过验收" are
+// absence claims, not structure.
 const CHECKS = [
   {
     id: "profile",
@@ -122,6 +125,38 @@ const CHECKS = [
   }
 ];
 
+const CJK_SIGNAL = /[\u3400-\u9fff]/;
+const CJK_BARE_MARKERS = CHECKS
+  .flatMap((check) => check.strongSignals)
+  .map((signal) => signal.toLowerCase())
+  .filter((signal) => CJK_SIGNAL.test(signal) && !signal.includes(":") && !signal.includes("："));
+
+const NO_BREAKPOINT = {
+  id: "none",
+  label: "No missing structure",
+  labelZh: "未发现缺失结构",
+  status: "present",
+  strongSignals: [],
+  weakSignals: [],
+  negations: [],
+  breakpoint: "No missing structure detected by basic checks.",
+  breakpointZh: "基础检查未发现缺失结构。",
+  risk: "This only proves explicit markers exist for all five checks; it does not prove the content is good.",
+  riskZh: "这只说明五类检查都有明确标记，不代表内容质量已经过关。",
+  next: "Review the quality of each structure before trusting the workflow.",
+  nextZh: "继续检查每个结构的内容质量，再决定是否信任这条工作流。"
+};
+
+const EN_MISSING_BEFORE = /(?:\b(?:no|without)\s+(?:real\s+|clear\s+|written\s+|actual\s+|explicit\s+|any\s+|the\s+)?|\b(?:missing|lack(?:s|ing|ed)?|skip(?:s|ped|ping)?)\s+(?:any\s+|the\s+)?)$/i;
+const EN_MISSING_AFTER = /^[\W\s]{0,8}(?:(?:is|are|was|were|has been)\s+)?(?:missing|absent|undefined|nope|tbd|not\s+(?:defined|written|set|provided)|never\s+(?:defined|written|set))\b/i;
+const EN_EMPTY_FIELD_VALUE = /^(?:nope|none|n\/a|na|tbd|todo|missing|absent|undefined|not\s+(?:defined|written|set|provided)|no\s+(?:acceptance|handoff|harvest|context|profile|standard|criteria|note|path|output)(?:\s+\w+){0,3})$/i;
+
+const ZH_MISSING_BEFORE = /(?:(?:没有|没|从没|从未|还没|尚未)(?:写过|写|做|定|任何|明确|真正|这个|本次|的)*|(?:没写|未写|没定|未定|没做|不做|不写|跳过(?:了)?|缺少|缺失)(?:这个|本次|任何|明确|的)*)$/;
+const ZH_MISSING_AFTER = /^[\s，,。！？?：:]{0,2}(?:没有(?:写|定|做)|没写|未写|没定|未定|还没定|缺少|缺失|算了|算了吧|跳过)/;
+const ZH_EMPTY_FIELD_VALUE = /^(?:无|没有|暂无|待定|未定|没定|没写|未写|缺失|缺少|跳过|算了|空)$/;
+const CJK_DECLARATION_AFTER = /^(?:[:：]|就是|是|为|包括|包含|写清楚|已|已经|完成了|完成|确认|很|清楚|明确|通过|归档|沉淀|保存|整理|输出|内容|素材|下一|先|接手|了|把|没有(?!写|定|做|明确|任何|标准|验收|交接|收割|画像|背景)|无(?!验收|交接|收割|画像|背景))/;
+const CJK_LABEL_THEN_DECLARATION_AFTER = /^(?:(?:标准|路径|记录|卡|背景|画像|规则|说明|内容)){1,2}(?:就是|是|为|已|已经|完成了|完成|确认|很|清楚|明确|通过|归档|沉淀|保存|整理|输出|没有(?!写|定|做|明确|任何|标准|验收|交接|收割|画像|背景)|无(?!验收|交接|收割|画像|背景))/;
+
 export function readDoctorInput(options) {
   if (options.inputFile) {
     return { text: fs.readFileSync(options.inputFile, "utf8"), source: "--input-file" };
@@ -147,15 +182,140 @@ function splitSegments(text) {
     .filter(Boolean);
 }
 
-function countDistinctHits(signals, segmentsLower) {
+function signalPositions(segmentLower, needle) {
+  const positions = [];
+  let fromIndex = 0;
+  while (fromIndex < segmentLower.length) {
+    const index = segmentLower.indexOf(needle, fromIndex);
+    if (index === -1) break;
+    positions.push(index);
+    fromIndex = index + Math.max(needle.length, 1);
+  }
+  return positions;
+}
+
+function fieldValueAfterSignal(segmentLower, needle, index) {
+  const rawAfter = segmentLower.slice(index + needle.length);
+  const after = rawAfter.trimStart();
+  if (needle.endsWith(":")) {
+    return after.trim();
+  }
+  if (after.startsWith(":") || after.startsWith("：")) {
+    return after.slice(1).trim();
+  }
+  return null;
+}
+
+function normalizeFieldValue(value) {
+  return value
+    .replace(/^[：:\-\s]+/, "")
+    .replace(/[。.!?！？；;，,\s]+$/g, "")
+    .trim();
+}
+
+function isMarkerStuffedFieldValue(value) {
+  const normalized = normalizeFieldValue(value).replace(/\s+/g, "");
+  return CJK_BARE_MARKERS.some((marker) => {
+    if (!normalized.startsWith(marker)) {
+      return false;
+    }
+    const rest = normalized.slice(marker.length);
+    return /^[:：，,。.!！？?；;]/.test(rest);
+  });
+}
+
+function isMissingFieldValue(value) {
+  const normalized = normalizeFieldValue(value);
+  return EN_EMPTY_FIELD_VALUE.test(normalized) ||
+    ZH_EMPTY_FIELD_VALUE.test(normalized) ||
+    isMarkerStuffedFieldValue(value);
+}
+
+function isNegatedSignal(segmentLower, needle, index) {
+  const fieldValue = fieldValueAfterSignal(segmentLower, needle, index);
+  if (fieldValue !== null) {
+    return isMissingFieldValue(fieldValue);
+  }
+
+  const before = segmentLower.slice(Math.max(0, index - 32), index);
+  const after = segmentLower.slice(index + needle.length, Math.min(segmentLower.length, index + needle.length + 32));
+  return EN_MISSING_BEFORE.test(before) || ZH_MISSING_BEFORE.test(before) ||
+    EN_MISSING_AFTER.test(after) || ZH_MISSING_AFTER.test(after);
+}
+
+function isBareCjkSignal(needle) {
+  return CJK_SIGNAL.test(needle) && !needle.includes(":") && !needle.includes("：");
+}
+
+function hasStructuredCjkCue(segmentLower, needle, index) {
+  if (!isBareCjkSignal(needle)) {
+    return true;
+  }
+
+  const after = segmentLower.slice(index + needle.length).replace(/\s+/g, "");
+  return CJK_DECLARATION_AFTER.test(after) || CJK_LABEL_THEN_DECLARATION_AFTER.test(after);
+}
+
+function isPositiveSignal(segmentLower, needle, index) {
+  return !isNegatedSignal(segmentLower, needle, index) && hasStructuredCjkCue(segmentLower, needle, index);
+}
+
+function countDistinctPositiveHits(signals, segmentsLower) {
   const hit = new Set();
   for (const signal of signals) {
     const needle = signal.toLowerCase();
-    if (segmentsLower.some((segment) => segment.includes(needle))) {
+    const hasPositiveHit = segmentsLower.some((segment) =>
+      signalPositions(segment, needle).some((index) => isPositiveSignal(segment, needle, index))
+    );
+    if (hasPositiveHit) {
       hit.add(needle);
     }
   }
   return hit;
+}
+
+function hasExplicitNegation(check, segmentLower) {
+  return check.negations.some((neg) => segmentLower.includes(neg.toLowerCase()));
+}
+
+function segmentHasNegatedMarker(check, segmentLower) {
+  const markerSignals = [...check.strongSignals, ...check.weakSignals];
+  return markerSignals.some((signal) => {
+    const needle = signal.toLowerCase();
+    return signalPositions(segmentLower, needle).some((index) =>
+      isNegatedSignal(segmentLower, needle, index)
+    );
+  });
+}
+
+function segmentEndsWithMarkerQuestion(check, segmentLower) {
+  const markerSignals = [...check.strongSignals, ...check.weakSignals];
+  return markerSignals.some((signal) => {
+    const needle = signal.toLowerCase();
+    return signalPositions(segmentLower, needle).some((index) =>
+      /^[\s？?，,。.!！]*$/.test(segmentLower.slice(index + needle.length))
+    );
+  });
+}
+
+function nextSegmentDeniesMarker(segmentLower) {
+  const trimmed = segmentLower.trim();
+  return /^(?:算了吧|算了|不做|跳过)/.test(trimmed) || /^(?:nope|none|tbd)\b/i.test(trimmed);
+}
+
+function segmentHasNegatedMarkerAt(check, segmentsLower, index) {
+  const segment = segmentsLower[index];
+  const nextSegment = segmentsLower[index + 1] || "";
+  return (
+    segmentHasNegatedMarker(check, segment) ||
+    (segmentEndsWithMarkerQuestion(check, segment) && nextSegmentDeniesMarker(nextSegment))
+  );
+}
+
+function hasNegatedMarker(check, segmentsLower) {
+  return segmentsLower.some((segment, index) =>
+    hasExplicitNegation(check, segment) || segmentHasNegatedMarkerAt(check, segmentsLower, index)
+  );
 }
 
 export function analyzeWorkflow(rawText) {
@@ -167,11 +327,9 @@ export function analyzeWorkflow(rawText) {
   }
 
   const checks = CHECKS.map((check) => {
-    const negationHit = check.negations.some((neg) =>
-      segmentsLower.some((segment) => segment.includes(neg.toLowerCase()))
-    );
-    const strongHits = countDistinctHits(check.strongSignals, segmentsLower);
-    const weakHits = countDistinctHits(check.weakSignals, segmentsLower);
+    const negationHit = hasNegatedMarker(check, segmentsLower);
+    const strongHits = countDistinctPositiveHits(check.strongSignals, segmentsLower);
+    const weakHits = countDistinctPositiveHits(check.weakSignals, segmentsLower);
 
     let status;
     if (negationHit) {
@@ -194,12 +352,22 @@ export function analyzeWorkflow(rawText) {
     };
   });
 
-  const top = checks.find((check) => check.status === "missing") ?? checks[0];
+  const top = checks.find((check) => check.status === "missing") ?? NO_BREAKPOINT;
   return { checks, top, evidence: evidenceSentence(text, top) };
 }
 
 function evidenceSentence(text, top) {
   const segments = splitSegments(text);
+  const segmentsLower = segments.map((segment) => segment.toLowerCase());
+  if (top.status === "missing") {
+    const negated = segments.find((segment, index) => {
+      const lower = segmentsLower[index];
+      return hasExplicitNegation(top, lower) || segmentHasNegatedMarkerAt(top, segmentsLower, index);
+    });
+    if (negated) {
+      return redact(negated).slice(0, 260);
+    }
+  }
   const negationMarkers = top.negations.map((neg) => neg.toLowerCase());
   const strongMarkers = top.strongSignals.map((sig) => sig.toLowerCase());
   const markers = top.status === "missing" ? negationMarkers : strongMarkers;
@@ -224,7 +392,7 @@ const TEXT = {
     pro: "Pro acceleration: Deep diagnosis can compare multiple breakpoints and scenario patterns, but Community intentionally reports only this top visible break.",
     honesty: "Method: public heuristic — a structural probe, not an AI diagnosis. Rules are open; no hidden weights.",
     redaction: (marker) => "Redaction note: sensitive-looking material was masked as " + marker + ".",
-    explain: "Explain: doctor basic uses five public bilingual structure checks. Each check scans the input sentence-by-sentence for strong markers, generic weak signals, and explicit negations. A check is present when it hits one strong marker, or two distinct weak signals with no negation; any negation forces missing. It selects the first missing item. This is a public heuristic (structural probe), not an AI diagnosis; rules are open and no private weights or thresholds are published.",
+    explain: "Explain: doctor basic uses five public bilingual structure checks. Each check scans the input sentence-by-sentence for strong markers, generic weak signals, exact negations, and negation cues near a marker. A check is present only when it hits one explicit strong marker outside a negated context; bare Chinese topic words also need a declaration cue, so keyword stuffing does not count as structure. Generic weak signals are retained for debugging but do not promote a check to present. Exact negations or nearby negation cues force missing. It selects the first missing item. This is a public heuristic (structural probe), not an AI diagnosis; rules are open and no private weights or thresholds are published.",
   },
   zh: {
     header: "AICT 工作流体检（基础版）",
@@ -238,7 +406,7 @@ const TEXT = {
     pro: "Pro acceleration 进阶加速：深度诊断能对比多个断点和场景模式，但社区版刻意只报这一个最明显的断点。",
     honesty: "方法说明：public heuristic（公开启发式）——结构启发探针，非 AI 诊断；规则公开，不藏权重。",
     redaction: (marker) => "脱敏说明：疑似敏感内容已被遮罩为 " + marker + "。",
-    explain: "Explain 说明：基础体检用五个公开的中英双语结构检查。每个检查按句逐句扫描输入里的强标记、泛词弱信号和显式否定。命中一个强标记，或命中两个不同的弱信号且没有否定，即判为 present；只要命中否定就强制 missing。然后挑出第一个 missing 的项。这是一个 public heuristic（结构启发探针），不是 AI 诊断；规则公开，不发布任何私有权重或阈值。",
+    explain: "Explain 说明：基础体检用五个公开的中英双语结构检查。每个检查按句逐句扫描输入里的强标记、泛词弱信号、精确否定，以及标记附近的否定线索。只有命中明确的强结构标记且不在否定语境里，才判为 present；中文裸主题词还需要像声明一样出现，单纯堆关键词不算结构。泛词弱信号只保留作调试参考，不会把检查项提升为 present。命中精确否定或附近否定线索就强制 missing。然后挑出第一个 missing 的项。这是一个 public heuristic（结构启发探针），不是 AI 诊断；规则公开，不发布任何私有权重或阈值。",
   }
 };
 
