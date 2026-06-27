@@ -1,3 +1,5 @@
+> Status: Legacy / lightweight prototype. Main repo is DoneTrace (ai-collab-open-system).
+
 # AI Collaboration Toolkit
 
 A local-first, bilingual CLI that bootstraps a small AI-collaboration workflow and
